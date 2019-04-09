@@ -25,6 +25,64 @@ global currentLine
 def swap(a, b):
     return (b, a)
 
+def asmtointsection2(args, opcode, ra, rb, imm):
+    # Compare with Zero Branches (Pseudo)
+    if(args[0] in opcodes['bzero']):
+        ra = int(args[1][1:])
+        imm = 0
+        
+        if(args[0] == "blez" or args[0]=="bgtz"):
+            imm = 1
+        return ra, rb, imm
+    #Pseudo-Branches
+    if(args[0] in {'ble': 10,'bgt': 11,'bleu': 13,'bgtu': 12,}):
+        ra = int(args[1][1:])
+        imm = int(args[2]) + 1
+        return ra, rb, imm
+    #Ret
+    #Register-Immediate Branches
+    if (opcode>=8 and opcode<=13):
+        ra = int(args[1][1:])
+        imm = int(args[2]) # p15 states this should be UImm5
+    #Register-Register Branch
+    elif (opcode>=16 and opcode<=21):
+        ra = int(args[1][1:])
+        rb = int(args[2][1:]) 
+    #loop or loopd or jalr
+    elif (opcode==22 or opcode==22 or  opcode==15):
+        rb = int(args[1][1:])
+        ra = int(args[2][1:]) 
+    elif (opcode ==14):
+        ra = int(args[1][1:])
+    return ra, rb, imm
+
+def asmtoint3(args, opcode):
+    func = opcodes['3'][args[0]][1]
+    #Load I-Format
+    if(opcode == 24):
+        rb = int(args[1][1:])
+        ra = int(args[2][1:])
+        imm = args[3]
+    #Store I-Format
+    elif(opcode == 25):
+        rb = int(args[3][1:])
+        ra = int(args[1][1:])
+        imm = args[2]
+    #Loadx R-Format
+    elif(opcode == 26):
+        rb = int(args[3][1:])
+        ra = int(args[2][1:])
+        rd = int(args[1][1:])
+        s = args[4]
+    elif(opcode == 27):
+        rb = int(args[2][1:])
+        ra = int(args[1][1:])
+        rd = int(args[4][1:])
+        s = args[3]
+    return ra, rb, rc, rd, s, func, imm
+    
+
+
 
 def asmtointFPU1(args, opcode, ra, rb, rc, rd, func, imm, p):
     rd = int(args[1][1:])
@@ -75,19 +133,55 @@ def asmtoint5(args, opcode, ra, rb, rc, rd, func, x):
         rb = rc
         rc = temp
 
-    return opcode, ra, rb, rc, rd, func, imm, x
+    return opcode, ra, rb, rc, rd, func, x
 
 
-def inttohex(opcode, ra, rb, rc, rd, func, imm, p):
-    if (opcode == 0):
-        opstr = format(opcode, '02b')
-        rsstr = format(ra, '03b')
-        rtstr = format(rb, '03b')
-        rdstr = format(rd, '03b')
-        fnstr = format(func, '05b')
-        # print opstr, rsstr, rtstr, rdstr, fnstr
-        instruction = opstr + rsstr + rtstr + rdstr + fnstr
-    # FPU1 instructions
+def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x):
+
+
+    if(opcode ==2 or opcode==3):
+        opstr = format(opcode, '06b')
+        offsetstr = format(offset,'026b')
+        instruction = opstr + offsetstr
+    #Section 2 (branch imm)
+    elif(opcode>=8 and opcode <=13):
+        opstr = format(opcode, '06b')
+        rastr = format(ra, '05b')
+        immstr = format(imm,'05b') # p15 states this should be UImm5 is this the correct format???
+        offsetstr = format(offset, '016b')
+        instruction = opstr + rastr + immstr + offsetstr
+    #JR instruction p15
+    elif (opcode == 14):
+        opstr = format(opcode, '06b')
+        rastr = format(ra, '05b')
+        emptystr = format(0,'05b') 
+        offsetstr = format(offset, '016b')
+        instruction = opstr + rastr + emptystr + offsetstr
+    #Section2 (non imm branch)
+    elif((opcode>=15 and opcode <=23)):
+        opstr = format(opcode, '06b')
+        rastr = format(ra, '05b')
+        rbstr = format(rb,'05b') 
+        offsetstr = format(offset, '016b')
+        instruction = opstr + rastr + rbstr + offsetstr      
+    #Section 3
+    elif (opcode ==24 or opcode==25):
+        opstr = format(opcode, '06b')
+        rastr = format(ra, '05b')
+        rbstr = format(rb,'05b') 
+        funcstr = format(offset, '04b')
+        immstr = format(imm,'012b')
+        instruction = opstr + rastr + rbstr + funcstr + immstr    
+    elif (opcode ==26 or opcode==27):
+        opstr = format(opcode, '06b')
+        rastr = format(ra, '05b')
+        rbstr = format(rb,'05b') 
+        funcstr = format(offset, '04b')
+        sstr = format(s,'02b')
+        rcstr = format(rc, '05b')
+        rdstr = format(rd,'05b') 
+        instruction = opstr + rastr + rbstr + funcstr + sstr + rcstr + rdstr          
+    # FPU instructions
     elif (opcode == 42 or opcode == 43 or opcode == 44):
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
@@ -118,7 +212,10 @@ layed out according to section/format (I'm not sure either)
 opcodes = {
     'j': {
         'j': 2,
-        'jal': 3
+        'jal': 3,
+        'jr': 14,
+        'ret': 14,
+        'jalr': 15,
     },
     'b': {
         'beqi': 8,
@@ -127,16 +224,51 @@ opcodes = {
         'bgei': 11,
         'bltui': 12,
         'bgeui': 13,
-        'jr': 14,
-        'jalr': 15,
+
         'beq': 16,
         'bne': 17,
         'blt': 18,
+        'bgt': 18,
         'bge': 19,
         'bltu': 20,
         'bgeu': 21,
+
+        # Compare with Immediate (0 to 30) and Branch Pseudo Instructions :
+        'ble': 10,
+        'bgt': 11,
+        'bleu': 13,
+        'bgtu': 12,
+        #-----------
         'loop': 22,
         'loopd': 23
+
+    },
+    'bzero': {
+        # Compare with Zero and Branch Pseudo-Instructions (use immediate instructions) :
+        'beqz': 8,
+        'bnez': 9,
+        'bltz': 10,
+        'bgtz': 11,
+        'bgez': 11,
+        'blez': 10
+    },
+    '3': {
+    # All instructions below come in I-Format or R-Format
+
+        'lb': (24,4),
+        'lh': (24,5),
+        'lw': (24,6),
+        'ld': (24,7),
+
+        'lbu':(24,0),
+        'lhu':(24,1),
+        'lwu':(24,2),
+        'ldu':(24,3),
+
+        'sb': (25,0),
+        'sh': (25,1),
+        'sw': (25,2),
+        'sd': (25,3)
     },
     '5': {
         "and": 41,
@@ -391,22 +523,69 @@ def asmtoint(asm):
         if(len(args) != 4):
             raise Exception(
                 ' Incorrect Number of arguments : ' + str(len(args)))
+        #Check if user used immediate or register version of the instruction
+        if(args[2][0]!="r"):
+            args[0] = args[0] + "i"
 
         opcode = opcodes['b'][args[0]]
         label = args[3]
         offset = symbolTable[label] - currentLine
-        return opcode, ra, rb, offset
-
-    # SECTION 3 j type
-    elif args[0] in opcodes['j']:
-        if(len(args) != 2):
+        ra, rb, imm = asmtointsection2(args, opcode, ra, rb, imm)
+    elif args[0] in opcodes['bzero']:
+        if(len(args) != 3):
             raise Exception(
                 ' Incorrect Number of arguments : ' + str(len(args)))
 
-        opcode = opcodes['j'][args[0]]
-        label = args[1]
+        opcode = opcodes['b'][args[0]]
+        label = args[2]
         offset = symbolTable[label] - currentLine
-        return opcode, offset
+        ra, rb, imm = asmtointsection2(args, opcode, ra, rb, imm)
+
+            
+
+    # SECTION 2 j type (does not call asmtointsection2)
+    elif args[0] in opcodes['j']:
+        if(args[0] == "jal" or args[0] =="j"):
+            label = args[1]
+            offset = symbolTable[label] - currentLine
+        elif(args[0] == "jr"):
+            if(len(args)==3):
+                label = args[2]
+                offset = symbolTable[label] - currentLine
+            elif(len(args)==2):
+                offset = 0
+            else:
+                raise Exception(
+                    ' Incorrect Number of arguments : ' + str(len(args)))   
+            ra = int(args[1])                 
+        elif(args[0] == "jalr"):
+            if(len(args)==4):
+                label = args[3]
+                offset = symbolTable[label] - currentLine
+            elif(len(args)==3):
+                offset = 0
+            else:
+                raise Exception(
+                    ' Incorrect Number of arguments : ' + str(len(args)))     
+            ra = int(args[2][1:])
+            rb = int(args[1][1:])
+        elif(args[0]=="ret"):
+            if(len(args)!=1):
+                raise Exception(
+                    ' Incorrect Number of arguments : ' + str(len(args)))
+            offset = 0
+            ra = 31
+        opcode = opcodes['j'][args[0]]
+    # Section 3
+    elif args[0] in opcodes['3']:
+        opcode = opcodes['3'][args[0]]
+        # Check if it is R-Format (has 5 arguments)
+        if(len(args)==5):
+            opcode +=2
+        if(len(args)!=5 or len(args)!=4):
+            raise Exception(
+                ' Incorrect Number of arguments : ' + str(len(args)))
+        ra, rb, rc, rd, s, func, imm = asmtoint3(args, opcode)
 
     # Section 4
 
@@ -419,15 +598,15 @@ def asmtoint(asm):
 
     else:
         return 0, 0, 0, 0, 0, 0, 0, 0
-    return opcode, ra, rb, rc, rd, func, imm, p
+    return opcode, ra, rb, rc, rd, func, imm, p, offset, s, x
 
 
 def decode(asm):
     """
     string line to hex string
     """
-    opcode, ra, rb, rc, rd, func, imm, p = asmtoint(asm)
-    instruction = inttohex(opcode, ra, rb, rc, rd, func, imm, p)
+    opcode, ra, rb, rc, rd, func, imm, p, offset, s, x = asmtoint(asm)
+    instruction = inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x)
     return instruction
 
 

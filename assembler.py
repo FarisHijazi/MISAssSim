@@ -10,11 +10,12 @@ Original file is located at
 from tkinter import *
 import re
 
-#from tkFileDialog import *
+# from tkFileDialog import *
 from tkinter import filedialog
 import os.path
 
 import sys
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 filename = "Untitled"
 fileexists = False
@@ -22,84 +23,80 @@ symbolTable = {}
 global currentLine
 
 
-def swap(a, b):
-    return (b, a)
-
 def asmtointsection2(args, opcode, ra, rb, imm):
     # Compare with Zero Branches (Pseudo)
-    if(args[0] in opcodes['bzero']):
-        ra = int(args[1][1:])
+    if args[0] in opcodes.get('bzero'):
+        ra = reg(args[1])
         imm = 0
-        
-        if(args[0] == "blez" or args[0]=="bgtz"):
+
+        if args[0] == "blez" or args[0] == "bgtz":
             imm = 1
         return ra, rb, imm
-    #Pseudo-Branches
-    if(args[0] in {'ble': 10,'bgt': 11,'bleu': 13,'bgtu': 12,}):
-        ra = int(args[1][1:])
+    # Pseudo-Branches
+    if args[0] in {'ble': 10, 'bgt': 11, 'bleu': 13, 'bgtu': 12, }:
+        ra = reg(args[1])
         imm = int(args[2]) + 1
         return ra, rb, imm
-    #Ret
-    #Register-Immediate Branches
-    if (opcode>=8 and opcode<=13):
-        ra = int(args[1][1:])
-        imm = int(args[2]) # p15 states this should be UImm5
-    #Register-Register Branch
-    elif (opcode>=16 and opcode<=21):
-        ra = int(args[1][1:])
-        rb = int(args[2][1:]) 
-    #loop or loopd or jalr
-    elif (opcode==22 or opcode==22 or  opcode==15):
-        rb = int(args[1][1:])
-        ra = int(args[2][1:]) 
-    elif (opcode ==14):
-        ra = int(args[1][1:])
+    # Ret
+    # Register-immediate Branches
+    if 8 <= opcode <= 13:
+        ra = reg(args[1])
+        imm = int(args[2])  # p15 states this should be Uimm5
+    # Register-Register Branch
+    elif 16 <= opcode <= 21:
+        ra = reg(args[1])
+        rb = reg(args[2])
+        # loop or loopd or jalr
+    elif opcode == 22 or opcode == 22 or opcode == 15:
+        rb = reg(args[1])
+        ra = reg(args[2])
+    elif opcode == 14:
+        ra = reg(args[1])
     return ra, rb, imm
 
+
 def asmtoint3(args, opcode):
-    func = opcodes['3'][args[0]][1]
+    func = opcodes.get('ls').get(args[0])
     rc = 0
     rd = 0
     imm = 0
     s = 0
-    #Load I-Format
-    if(opcode == 24):
-        rb = int(args[1][1:])
-        ra = int(args[2][1:])
+    # Load I-Format
+    if opcode == 24:
+        rb = reg(args[1])
+        ra = reg(args[2])
         imm = args[3]
-    #Store I-Format
-    elif(opcode == 25):
-        rb = int(args[3][1:])
-        ra = int(args[1][1:])
+    # Store I-Format
+    elif opcode == 25:
+        rb = reg(args[3])
+        ra = reg(args[1])
         imm = args[2]
-    #Loadx R-Format
-    elif(opcode == 26):
-        rb = int(args[3][1:])
-        ra = int(args[2][1:])
-        rd = int(args[1][1:])
+    # Loadx R-Format
+    elif opcode == 26:
+        rb = reg(args[3])
+        ra = reg(args[2])
+        rd = reg(args[1])
         s = int(args[4])
-    elif(opcode == 27):
-        rb = int(args[2][1:])
-        ra = int(args[1][1:])
-        rc = int(args[4][1:])
+    elif opcode == 27:
+        rb = reg(args[2])
+        ra = reg(args[1])
+        rc = reg(args[4])
         s = int(args[3])
     return ra, rb, rc, rd, s, func, imm
-    
-
 
 
 def asmtointFPU1(args, opcode, ra, rb, rc, rd, func, imm, p):
-    rd = int(args[1][1:])
-    ra = int(args[2][1:])
+    rd = reg(args[1])
+    ra = reg(args[2])
     opcode = 42
     p, func = fpu1_dict[args[0]]
     return opcode, ra, rb, rc, rd, func, imm, p
 
 
 def asmtointFPU2(args, opcode, ra, rb, rc, rd, func, imm, p):
-    rd = int(args[1][1:])
-    ra = int(args[2][1:])
-    rb = int(args[3][1:])
+    rd = reg(args[1])
+    ra = reg(args[2])
+    rb = reg(args[3])
     opcode = 43
     p, func, swp = fpu2_dict[args[0]]
 
@@ -110,10 +107,10 @@ def asmtointFPU2(args, opcode, ra, rb, rc, rd, func, imm, p):
 
 
 def asmtointFPU3(args, opcode, ra, rb, rc, rd, func, imm, p):
-    rd = int(args[1][1:])
-    ra = int(args[2][1:])
-    rb = int(args[3][1:])
-    rc = int(args[4][1:])
+    rd = reg(args[1])
+    ra = reg(args[2])
+    rb = reg(args[3])
+    rc = reg(args[4])
     opcode = 44
     p, func, swp = fpu3_dict[args[0]]
 
@@ -123,8 +120,8 @@ def asmtointFPU3(args, opcode, ra, rb, rc, rd, func, imm, p):
     return opcode, ra, rb, rc, rd, func, imm, p
 
 
-def asmtoint5(args, opcode, ra, rb, rc, rd, func, x):
-    rd = int(args[1][1:])
+def asmtoint5(args, opcode, ra, rb, rc, rd):
+    rd = reg(args[1])
     ra = int(args[2][1:])
     rb = int(args[3][1:])
     rc = int(args[4][1:])
@@ -132,7 +129,7 @@ def asmtoint5(args, opcode, ra, rb, rc, rd, func, x):
 
     x, func = sec5_dict[args[0]]
 
-    if(args[0] == "selz"):  # sel , switch b and c
+    if args[0] == "selz":  # sel , switch b and c
         temp = rb
         rb = rc
         rc = temp
@@ -141,52 +138,50 @@ def asmtoint5(args, opcode, ra, rb, rc, rd, func, x):
 
 
 def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x):
-
-
-    if(opcode ==2 or opcode==3):
+    if opcode == 2 or opcode == 3:
         opstr = format(opcode, '06b')
-        offsetstr = format(offset,'026b')
+        offsetstr = format(offset, '026b')
         instruction = opstr + offsetstr
-    #Section 2 (branch imm)
-    elif(opcode>=8 and opcode <=13):
+    # Section 2 (branch imm)
+    elif 8 <= opcode <= 13:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
-        immstr = format(imm,'05b') # p15 states this should be UImm5 is this the correct format???
+        immstr = format(imm, '05b')  # p15 states this should be Uimm5 is this the correct format???
         offsetstr = format(offset, '016b')
         instruction = opstr + rastr + immstr + offsetstr
-    #JR instruction p15
-    elif (opcode == 14):
+    # JR instruction p15
+    elif opcode == 14:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
-        emptystr = format(0,'05b') 
+        emptystr = format(0, '05b')
         offsetstr = format(offset, '016b')
         instruction = opstr + rastr + emptystr + offsetstr
-    #Section2 (non imm branch)
-    elif((opcode>=15 and opcode <=23)):
+    # Section2 (non imm branch)
+    elif 15 <= opcode <= 23:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
-        rbstr = format(rb,'05b') 
+        rbstr = format(rb, '05b')
         offsetstr = format(offset, '016b')
-        instruction = opstr + rastr + rbstr + offsetstr      
-    #Section 3
-    elif (opcode ==24 or opcode==25):
+        instruction = opstr + rastr + rbstr + offsetstr
+        # Section 3
+    elif opcode == 24 or opcode == 25:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
-        rbstr = format(rb,'05b') 
+        rbstr = format(rb, '05b')
         funcstr = format(offset, '04b')
-        immstr = format(imm,'012b')
-        instruction = opstr + rastr + rbstr + funcstr + immstr    
-    elif (opcode ==26 or opcode==27):
+        immstr = format(imm, '012b')
+        instruction = opstr + rastr + rbstr + funcstr + immstr
+    elif opcode == 26 or opcode == 27:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
-        rbstr = format(rb,'05b') 
+        rbstr = format(rb, '05b')
         funcstr = format(offset, '04b')
-        sstr = format(s,'02b')
+        sstr = format(s, '02b')
         rcstr = format(rc, '05b')
-        rdstr = format(rd,'05b') 
-        instruction = opstr + rastr + rbstr + funcstr + sstr + rcstr + rdstr          
-    # FPU instructions
-    elif (opcode == 42 or opcode == 43 or opcode == 44):
+        rdstr = format(rd, '05b')
+        instruction = opstr + rastr + rbstr + funcstr + sstr + rcstr + rdstr
+        # FPU instructions
+    elif opcode == 42 or opcode == 43 or opcode == 44:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
         rbstr = format(rb, '05b')
@@ -195,12 +190,11 @@ def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x):
         fnstr = format(func, '05b')
         pstr = format(p, '01b')
         instruction = opstr + rastr + rbstr + fnstr + pstr + rcstr + rdstr
-
     else:
         opstr = format(opcode, '02b')
         rbstr = format(rb, '03b')
         rastr = format(ra, '03b')
-        if (imm < 0):
+        if imm < 0:
             imm2s = ((-imm) ^ 255) + 1
             immstr = format(imm2s, '08b')
         else:
@@ -232,21 +226,20 @@ opcodes = {
         'beq': 16,
         'bne': 17,
         'blt': 18,
-        'bgt': 18,
         'bge': 19,
         'bltu': 20,
         'bgeu': 21,
 
-        # Compare with Immediate (0 to 30) and Branch Pseudo Instructions :
+        # Compare with immediate (0 to 30) and Branch Pseudo Instructions :
         'ble': 10,
         'bgt': 11,
         'bleu': 13,
         'bgtu': 12,
-        #-----------
+        # -----------
         'loop': 22,
         'loopd': 23
-
     },
+
     'bzero': {
         # Compare with Zero and Branch Pseudo-Instructions (use immediate instructions) :
         'beqz': 8,
@@ -256,25 +249,26 @@ opcodes = {
         'bgez': 11,
         'blez': 10
     },
-    '3': {
-    # All instructions below come in I-Format or R-Format
 
-        'lb': (24,4),
-        'lh': (24,5),
-        'lw': (24,6),
-        'ld': (24,7),
+    'ls': {
+        # All instructions below come in I-Format or R-Format
+        'lb': (24, 4),
+        'lh': (24, 5),
+        'lw': (24, 6),
+        'ld': (24, 7),
 
-        'lbu':(24,0),
-        'lhu':(24,1),
-        'lwu':(24,2),
-        'ldu':(24,3),
+        'lbu': (24, 0),
+        'lhu': (24, 1),
+        'lwu': (24, 2),
+        'ldu': (24, 3),
 
-        'sb': (25,0),
-        'sh': (25,1),
-        'sw': (25,2),
-        'sd': (25,3)
+        'sb': (25, 0),
+        'sh': (25, 1),
+        'sw': (25, 2),
+        'sd': (25, 3)
     },
-    '5': {
+    'alu': {  # ALU instructions (section 5)
+        "add": 41,
         "and": 41,
         "or": 41,
         "xor": 41,
@@ -428,52 +422,58 @@ fpu3_dict = {
 }
 # key: neumonic, value: (x, func)
 sec5_dict = {
-    "add":  (0, 0),
-    "and":  (0, 2),
-    "or":  (0, 4),
-    "xor":  (0, 6),
-    "nadd":  (0, 1),
-    "cand":  (0, 3),
-    "cor":  (0, 5),
-    "xnor":  (0, 7),
-    "andeq":  (1, 0),
-    "andne":  (1, 1),
-    "andlt":  (1, 2),
-    "andge":  (1, 3),
-    "andltu":  (1, 4),
-    "andgeu":  (1, 5),
-    "oreq":  (1, 8),
-    "orne":  (1, 9),
-    "orlt":  (1, 0),
-    "orge":  (1, 1),
-    "orltu":  (1, 2),
-    "orgeu":  (1, 3),
-    "min":  (1, 4),
-    "max":  (1, 5),
-    "minu":  (1, 6),
-    "maxu":  (1, 7),
-    "andgt":  (1, 2),
-    "andle":  (1, 3),
-    "andgtu":  (1, 4),
-    "andleu":  (1, 5),
-    "orgt":  (1, 0),
-    "orle":  (1, 1),
-    "orgtu":  (1, 2),
-    "orleu":  (1, 3),
-    "sel":  (2, 0),
-    "seln":  (2, 1),
-    "selp":  (2, 2),
-    "selz":  (2, 0),
-    "madd":  (2, 4),
-    "nmadd":  (2, 5)
+    "add": (0, 0),
+    "and": (0, 2),
+    "or": (0, 4),
+    "xor": (0, 6),
+    "nadd": (0, 1),
+    "cand": (0, 3),
+    "cor": (0, 5),
+    "xnor": (0, 7),
+    "andeq": (1, 0),
+    "andne": (1, 1),
+    "andlt": (1, 2),
+    "andge": (1, 3),
+    "andltu": (1, 4),
+    "andgeu": (1, 5),
+    "oreq": (1, 8),
+    "orne": (1, 9),
+    "orlt": (1, 0),
+    "orge": (1, 1),
+    "orltu": (1, 2),
+    "orgeu": (1, 3),
+    "min": (1, 4),
+    "max": (1, 5),
+    "minu": (1, 6),
+    "maxu": (1, 7),
+    "andgt": (1, 2),
+    "andle": (1, 3),
+    "andgtu": (1, 4),
+    "andleu": (1, 5),
+    "orgt": (1, 0),
+    "orle": (1, 1),
+    "orgtu": (1, 2),
+    "orleu": (1, 3),
+    "sel": (2, 0),
+    "seln": (2, 1),
+    "selp": (2, 2),
+    "selz": (2, 0),
+    "madd": (2, 4),
+    "nmadd": (2, 5)
 }
 
 
+def asmtointNOP(args, opcode, ra, rb, rc, rd, func, imm, p):
+    # FIXME: this is a fake function
+    return opcode, imm
+
+
 def asmtoint(asm):
-    asm_split = re.split(r" |,\s*|\(|\) |= |\[|\]", asm)
+    regex = re.compile(r"[,\s()=\[|\]]+")
+    asm_split = re.split(regex, asm)
     args = []
     for i in range(len(asm_split)):
-        if (asm_split[i] != ""):
+        if asm_split[i] != "":
             args.append(asm_split[i])
 
     print("asm_split", asm_split)
@@ -497,112 +497,506 @@ def asmtoint(asm):
 
     # Checking if the opcode is of type FPU1
     if args[0] in fpu1_dict:
-        if(len(args) != 3):
-            raise Exception(' Incorrect Number of arguments')
+        if len(args) != 3:
+            raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU1(
             args, opcode, ra, rb, rc, rd, func, imm, p)
     # Checking if FPU2
-    elif args[0] in opcodes['fpu2']:
-        if(len(args) != 4):
-            raise Exception(' Incorrect Number of arguments')
+    elif args[0] in opcodes.get('fpu2'):
+        if len(args) != 4:
+            raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU2(
             args, opcode, ra, rb, rc, rd, func, imm, p)
     elif args[0] in fpu3_dict:
-        if(len(args) != 5):
+        if len(args) != 5:
             raise Exception(
-                ' Incorrect Number of arguments : ' + str(len(args)))
+                'Incorrect Number of arguments : ' + str(len(args)))
         opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU3(
             args, opcode, ra, rb, rc, rd, func, imm, p)
     # These instructions may have args len of 4 or 5 so they are not in previous groupings
     elif args[0] in fpu2_dict:
-        if(len(args) == 4):
+        if len(args) == 4:
             opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU2(
                 args, opcode, ra, rb, rc, rd, func, imm, p)
-        elif(len(args) == 5):
+        elif len(args) == 5:
             opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU3(
                 args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # SECTION 2 branches
-    elif args[0] in opcodes['b']:
-        if(len(args) != 4):
-            raise Exception(
-                ' Incorrect Number of arguments : ' + str(len(args)))
-        #Check if user used immediate or register version of the instruction
-        if(args[2][0]!="r"):
+    elif args[0] in opcodes.get('b'):
+        if len(args) != 4:
+            raise Exception('Incorrect Number of arguments : ' + str(len(args)))
+        # Check if user used immediate or register version of the instruction
+        if args[2][0] != "r":
             args[0] = args[0] + "i"
 
-        opcode = opcodes['b'][args[0]]
+        opcode = opcodes.get('b').get(args[0])
         label = args[3]
         offset = symbolTable[label] - currentLine
         ra, rb, imm = asmtointsection2(args, opcode, ra, rb, imm)
-    elif args[0] in opcodes['bzero']:
-        if(len(args) != 3):
-            raise Exception(
-                ' Incorrect Number of arguments : ' + str(len(args)))
+    elif args[0] in opcodes.get('bzero'):
+        if len(args) != 3:
+            raise Exception('Incorrect Number of arguments : ' + str(len(args)))
 
-        opcode = opcodes['b'][args[0]]
+        opcode = opcodes.get('b').get(args[0])
         label = args[2]
         offset = symbolTable[label] - currentLine
         ra, rb, imm = asmtointsection2(args, opcode, ra, rb, imm)
-
-            
-
     # SECTION 2 j type (does not call asmtointsection2)
-    elif args[0] in opcodes['j']:
-        if(args[0] == "jal" or args[0] =="j"):
+    elif args[0] in opcodes.get('j'):
+        if args[0] == "jal" or args[0] == "j":
             label = args[1]
             offset = symbolTable[label] - currentLine
-        elif(args[0] == "jr"):
-            if(len(args)==3):
+        elif args[0] == "jr":
+            if len(args) == 3:
                 label = args[2]
                 offset = symbolTable[label] - currentLine
-            elif(len(args)==2):
+            elif len(args) == 2:
                 offset = 0
             else:
                 raise Exception(
-                    ' Incorrect Number of arguments : ' + str(len(args)))   
-            ra = int(args[1])                 
-        elif(args[0] == "jalr"):
-            if(len(args)==4):
+                    'Incorrect Number of arguments : ' + str(len(args)))
+            ra = int(args[1])
+        elif args[0] == "jalr":
+            if len(args) == 4:
                 label = args[3]
                 offset = symbolTable[label] - currentLine
-            elif(len(args)==3):
+            elif len(args) == 3:
                 offset = 0
             else:
                 raise Exception(
-                    ' Incorrect Number of arguments : ' + str(len(args)))     
-            ra = int(args[2][1:])
-            rb = int(args[1][1:])
-        elif(args[0]=="ret"):
-            if(len(args)!=1):
+                    'Incorrect Number of arguments : ' + str(len(args)))
+            ra = reg(args[2])
+            rb = reg(args[1])
+        elif args[0] == "ret":
+            if len(args) != 1:
                 raise Exception(
-                    ' Incorrect Number of arguments : ' + str(len(args)))
+                    'Incorrect Number of arguments : ' + str(len(args)))
             offset = 0
             ra = 31
-        opcode = opcodes['j'][args[0]]
+        opcode = opcodes.get('j').get(args[0])
     # Section 3
-    elif args[0] in opcodes['3']:
-        opcode = opcodes['3'][args[0]][0]
+    elif args[0] in opcodes.get('ls'):
+        opcode = opcodes.get('ls').get(args[0])
         # Check if it is R-Format (has 5 arguments)
-        if(len(args)==5):
+        if len(args) == 5:
             opcode = opcode + 2
-        if(len(args)!=5 and len(args)!=4):
+        if len(args) != 5 and len(args) != 4:
             raise Exception(
-                ' Incorrect Number of arguments : ' + str(len(args)))
+                'Incorrect Number of arguments : ' + str(len(args)))
         ra, rb, rc, rd, s, func, imm = asmtoint3(args, opcode)
 
-    # Section 4
 
-       # section5
-    elif args[0] in opcodes['5']:
-        if(len(args) != 5):
+    # Section 4
+    # Checking if it belongs to ALUI (Opcode 32 - 35)
+
+    # section5
+    elif args[0] in opcodes.get('alu'):
+        if len(args) != 5:
             raise Exception("Incorrect Number of parameters passed")
         opcode, ra, rb, rc, rd, func, x = asmtoint5(
-            args, opcode, ra, rb, rc, rd, func, x)
+            args, opcode, ra, rb, rc, rd)
+
+    elif (args[0] == "add" or args[0] == "and" or args[0] == "or" or args[0] == "xor"
+          or args[0] == "nadd" or args[0] == "cand" or args[0] == "cor" or args[0] == "xnor"
+          or args[0] == "sub" or args[0] == "andc" or args[0] == "orc"
+          or args[0] == "eq" or args[0] == "ne" or args[0] == "lt" or args[0] == "ge"
+          or args[0] == "ltu" or args[0] == "geu" or args[0] == "min" or args[0] == "max"
+          or args[0] == "gt" or args[0] == "le" or args[0] == "gtu" or args[0] == "leu"):
+        if len(args) != 5:
+            raise Exception('Incorrect Number of arguments')
+        opcode, ra, rb, func, imm = asmtointALUI(args, opcode, ra, rb, rc, rd, func, imm, p)
+
+    # Checking if it belongs to RET (Opcode 36)
+    elif (args[0] == "retadd" or args[0] == "retnadd" or args[0] == "retand" or args[0] == "retcand"
+          or args[0] == "retor" or args[0] == "retcor" or args[0] == "retxor" or args[0] == "retset"
+          or args[0] == "reteq" or args[0] == "retne" or args[0] == "retlt" or args[0] == "retge"
+          or args[0] == "retltu" or args[0] == "retgeu" or args[0] == "retmin" or args[0] == "retmax"):
+        if len(args) != 4:
+            raise Exception('Incorrect Number of arguments')
+        opcode, ra, rb, func, imm = asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p)
+    # Checking if it belongs to NOP (Opcode 0)         ############## REVIEW , I have done nothing with this NOP
+    elif args[0] == "nop":
+        if len(args) != 2:
+            raise Exception('Incorrect Number of arguments')
+        opcode, imm = asmtointNOP(args, opcode, ra, rb, rc, rd, func, imm, p)
+
+    # Checking if it belongs to SHIFT (Opcode 37)
+    elif (args[0] == "shlr" or args[0] == "salr" or args[0] == "ror" or args[0] == "mul"
+          or args[0] == "div" or args[0] == "mod" or args[0] == "divu" or args[0] == "modu"
+          or args[0] == "shl" or args[0] == "shr" or args[0] == "sar" or args[0] == "rol"
+          or args[0] == "extr" or args[0] == "extru" or args[0] == "ext" or args[0] == "extu"
+          or args[0] == "insz"):
+        if len(args) != 4:
+            raise Exception('Incorrect Number of arguments')
+        opcode, ra, rb, func, imm, p = asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p)
+
+    # Checking if it belongs to ALU (Opcode 40)
+    elif (args[0] == "add" or args[0] == "nadd" or args[0] == "and" or args[0] == "cand"
+          or args[0] == "or" or args[0] == "cor" or args[0] == "xor" or args[0] == "xnor"
+          or args[0] == "eq" or args[0] == "ne" or args[0] == "lt" or args[0] == "ge"
+          or args[0] == "ltu" or args[0] == "geu" or args[0] == "min" or args[0] == "max"
+          or args[0] == "shl" or args[0] == "shr" or args[0] == "sar" or args[0] == "ror"
+          or args[0] == "mul"
+          or args[0] == "div" or args[0] == "mod" or args[0] == "divu" or args[0] == "modu"
+          or args[0] == "adds"
+          or args[0] == "nadds"
+          or args[0] == "sub" or args[0] == "andc" or args[0] == "orc" or args[0] == "gt"
+          or args[0] == "le" or args[0] == "gtu" or args[0] == "leu"):
+        if len(args) != 4:
+            raise Exception('Incorrect Number of arguments')
+        opcode, ra, rb, func, x, rd, n = asmtointALU(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     else:
+        print("Returning all zeroes since the instruction is not recognized")
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     return opcode, ra, rb, rc, rd, func, imm, p, offset, s, x
+
+
+def asmtointALUI(args, opcode, ra, rb, rc, rd, func, imm, p):
+    rb = reg(args[1])
+    ra = reg(args[2])
+    imm = int(args[3])
+
+    # Opcode 32
+    if args[0] == "add":
+        opcode = 32
+        func = 0
+    elif args[0] == "nadd":
+        opcode = 32
+        func = 1
+    elif args[0] == "and":
+        opcode = 32
+        func = 2
+    elif args[0] == "cand":
+        opcode = 32
+        func = 3
+
+        # Opcode 33
+    elif args[0] == "or":
+        opcode = 33
+        func = 4
+    elif args[0] == "cor":
+        opcode = 33
+        func = 5
+    elif args[0] == "xor":
+        opcode = 33
+        func = 6
+    elif args[0] == "set":
+        opcode = 33
+        func = 7
+        imm = int(args[2])
+
+
+    # Opcode 34
+    elif args[0] == "eq":
+        opcode = 34
+        func = 8
+    elif args[0] == "ne":
+        opcode = 34
+        func = 9
+    elif args[0] == "lt":
+        opcode = 34
+        func = 10
+    elif args[0] == "ge":
+        opcode = 34
+        func = 11
+
+        # Opcode 35
+    elif args[0] == "ltu":
+        opcode = 35
+        func = 12
+    elif args[0] == "geu":
+        opcode = 35
+        func = 13
+    elif args[0] == "min":
+        opcode = 35
+        func = 14
+    elif args[0] == "max":
+        opcode = 35
+        func = 15
+
+        # Pseudo-Instructions for ALUI
+    elif args[0] == "sub":  # uses add , -imm
+        opcode = 32
+        func = 0
+        imm = - imm
+    elif args[0] == "mov":  # uses or ,  imm = 0
+        opcode = 33
+        func = 4
+        imm = 0
+    elif args[0] == "neg":  # uses nadd , imm = 0
+        opcode = 32
+        func = 1
+        imm = 0
+    elif args[0] == "not":  # uses cor ,  imm = 0
+        opcode = 33
+        func = 5
+        imm = 0
+
+        # Compare Pseudo-Instructions for ALUI
+    elif args[0] == "gt":  # uses ge  , imm = imm + 1
+        opcode = 32
+        func = 0
+        imm = imm + 1
+    elif args[0] == "le":  # uses lt  , imm = imm + 1
+        opcode = 32
+        func = 0
+        imm = imm + 1
+    elif args[0] == "gtu":  # uses geu , imm = imm + 1
+        opcode = 33
+        func = 4
+        imm = imm + 1
+    elif args[0] == "leu":  # uses ltu , imm = imm + 1
+        opcode = 33
+        func = 4
+        imm = imm + 1
+
+    return opcode, ra, rb, func, imm
+
+
+def asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p):
+    ra = reg(args[1])
+    rb = reg(args[2])
+    imm = int(args[3])
+    opcode = 36
+
+    if args[0] == "retadd":
+        func = 0
+    elif args[0] == "retnadd":
+        func = 1
+    elif args[0] == "retand":
+        func = 2
+    elif args[0] == "retcand":
+        func = 3
+    elif args[0] == "retor":
+        func = 4
+    elif args[0] == "retcor":
+        func = 5
+    elif args[0] == "retxor":
+        func = 6
+    elif args[0] == "retset":
+        func = 7
+        imm = int(args[2])
+    elif args[0] == "reteq":
+        func = 8
+    elif args[0] == "retne":
+        func = 9
+    elif args[0] == "retlt":
+        func = 10
+    elif args[0] == "retge":
+        func = 11
+    elif args[0] == "retltu":
+        func = 12
+    elif args[0] == "retgeu":
+        func = 13
+    elif args[0] == "retmin":
+        func = 14
+    elif args[0] == "retmax":
+        func = 15
+
+    return opcode, ra, rb, func, imm
+
+
+def asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p):
+    rb = reg(args[1])
+    ra = reg(args[2])
+    opcode = 37
+    if args[0] == "shlr":
+        func = 0
+        imm_L = int(args[3])
+        imm_R = int(args[4])
+    elif args[0] == "shlr":
+        func = 1
+        imm_L = int(args[3])
+        imm_R = int(args[4])
+    elif args[0] == "salr":
+        func = 2
+        imm_L = int(args[3])
+        imm_R = int(args[4])
+    elif args[0] == "ror":  # only 3 args, imm_R is the 3rd arg
+        func = 3
+        imm_R = int(args[3])
+    elif args[0] == "mul":  # only 3 args, imm   is the 3rd arg
+        func = 8
+        imm = int(args[3])
+    elif args[0] == "div":  # only 3 args, imm   is the 3rd arg
+        func = 12
+        imm = int(args[3])
+    elif args[0] == "mod":  # only 3 args, imm   is the 3rd arg
+        func = 13
+        imm = int(args[3])
+    elif args[0] == "divu":  # only 3 args, imm   is the 3rd arg
+        func = 14
+        imm = int(args[3])
+    elif args[0] == "modu":  # only 3 args, imm   is the 3rd arg
+        func = 15
+        imm = int(args[3])
+
+        # Pseudo-Instructions for SHIFT
+    elif args[0] == "shl":  # uses shlr, imm_R = 0
+        func = 0
+        imm_L = int(args[3])
+    elif args[0] == "shr":  # uses shlr, imm_L = 0
+        func = 0
+        imm_R = int(args[3])
+    elif args[0] == "sar":  # uses salr, imm_L = 0
+        func = 2
+        imm_R = int(args[3])
+    elif args[0] == "rol":  # uses ror,  imm_R = 64 - imm_R
+        func = 3
+        imm_R = int(args[3])
+    elif args[0] == "extr":  # uses salr, imm_L = 64 - imm_L - p,  imm_R = 64 - imm_L
+        func = 2
+        imm_L = int(args[3])
+        p = int(args[4])
+    elif args[0] == "extru":  # uses shlr, imm_L = 64 - imm_L - p
+        func = 0
+        imm_L = int(args[3])
+        p = int(args[4])
+    elif args[0] == "ext":  # uses salr, imm_L = 64 - imm_L,  imm_R = 64 - imm_L
+        func = 2
+        imm_L = int(args[3])
+    elif args[0] == "extu":  # uses shlr, imm_L = 3rd arg
+        func = 0
+        imm_L = int(args[3])
+    elif args[0] == "insz":  # uses salr, imm_L = 3rd arg
+        func = 2
+        imm_L = int(args[3])
+        p = int(args[4])
+
+    return opcode, ra, rb, func, imm, p
+
+
+def asmtointALU(args, opcode, ra, rb, rc, rd, func, imm, p):
+    rd = reg(args[1])
+    ra = int(args[2][1:])
+    rb = int(args[3][1:])
+    opcode = 40
+    #  x = 0
+    if args[0] == "add":
+        func = 0
+        x = 0
+    elif args[0] == "nadd":
+        func = 1
+        x = 0
+    elif args[0] == "and":
+        func = 2
+        x = 0
+    elif args[0] == "cand":
+        func = 3
+        x = 0
+    elif args[0] == "or":
+        func = 4
+        x = 0
+    elif args[0] == "cor":
+        func = 5
+        x = 0
+    elif args[0] == "xor":
+        func = 6
+        x = 0
+    elif args[0] == "xnor":
+        func = 7
+        x = 0
+    elif args[0] == "eq":
+        func = 8
+        x = 0
+    elif args[0] == "ne":
+        func = 9
+        x = 0
+    elif args[0] == "lt":
+        func = 10
+        x = 0
+    elif args[0] == "ge":
+        func = 11
+        x = 0
+    elif args[0] == "ltu":
+        func = 12
+        x = 0
+    elif args[0] == "geu":
+        func = 13
+        x = 0
+    elif args[0] == "min":
+        func = 14
+        x = 0
+    elif args[0] == "max":
+        func = 15
+        x = 0
+    # x = 1
+    elif args[0] == "shl":
+        func = 0
+        x = 1
+    elif args[0] == "shr":
+        func = 1
+        x = 1
+    elif args[0] == "sar":
+        func = 2
+        x = 1
+    elif args[0] == "ror":
+        func = 3
+        x = 1
+    elif args[0] == "mul":
+        func = 8
+        x = 1
+    elif args[0] == "div":
+        func = 12
+        x = 1
+    elif args[0] == "mod":
+        func = 13
+        x = 1
+    elif args[0] == "divu":
+        func = 14
+        x = 1
+    elif args[0] == "modu":
+        func = 15
+        x = 1
+        # x = 2
+    elif args[0] == "adds":
+        n = reg(args[4])  # n = 0 ~ 15
+        x = 2
+
+        # x = 3
+    elif args[0] == "nadds":
+        n = reg(args[4])  # n = 0 ~ 15
+        x = 3
+
+        # Pseudo-Instructions for ALU
+    elif args[0] == "sub":  # uses nadd, swaps ra & rb
+        func = 1
+        x = 0
+        ra = int(args[3])
+        rb = int(args[2])
+    elif args[0] == "andc":  # uses cand, swaps ra & rb
+        func = 1
+        x = 0
+        ra = int(args[3])
+        rb = int(args[2])
+    elif args[0] == "orc":  # uses cor,  swaps ra & rb
+        func = 1
+        x = 0
+        ra = int(args[3])
+        rb = int(args[2])
+    elif args[0] == "gt":  # uses lt,   swaps ra & rb
+        func = 1
+        x = 0
+        ra = int(args[3])
+        rb = int(args[2])
+    elif args[0] == "le":  # uses ge,   swaps ra & rb
+        func = 1
+        x = 0
+        ra = int(args[3])
+        rb = int(args[2])
+    elif args[0] == "gtu":  # uses ltu,  swaps ra & rb
+        func = 1
+        x = 0
+        ra = int(args[3])
+        rb = int(args[2])
+    elif args[0] == "leu":  # uses geu,  swaps ra & rb
+        func = 1
+        x = 0
+        ra = int(args[3])
+        rb = int(args[2])
+    return opcode, ra, rb, func, x, rd, n
 
 
 def decode(asm):

@@ -832,7 +832,6 @@ def asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p):
     elif args[0] == "modu":  # only 3 args, imm   is the 3rd arg
         func = 15
         imm = int(args[3])
-
         # Pseudo-Instructions for SHIFT
     elif args[0] == "shl":  # uses shlr, imm_R = 0
         func = 0
@@ -1008,55 +1007,6 @@ def decode(asm):
     return instruction
 
 
-def openFile():
-    global filename
-    openfilename = askopenfilename()
-    if openfilename is not None:
-        filename = openfilename
-        asmfile = open(filename, "r")
-        asmfile.seek(0)
-        asmdata = asmfile.read()
-        textArea.delete("1.0", "end - 1c")
-        textArea.insert("1.0", asmdata)
-        asmfile.close()
-        filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
-        frame.title("muCPU Assembler [" + filename + "]")
-        frame.focus()
-
-
-def saveFile():
-    global filename
-    asmdata = textArea.get("1.0", "end - 1c")
-    asmfile = open(filename, "w")
-    asmfile.seek(0)
-    asmfile.truncate()
-    asmfile.write(asmdata)
-    asmfile.close()
-
-
-def saveFileAs():
-    global filename
-    global fileexists
-    saveasfilename = asksaveasfilename()
-    if saveasfilename is not None:
-        filename = saveasfilename
-        fileexists = True
-        asmdata = textArea.get("1.0", "end - 1c")
-        asmfile = open(filename, "w")
-        asmfile.seek(0)
-        asmfile.truncate()
-        asmfile.write(asmdata)
-        asmfile.close()
-        filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
-        frame.title("muCPU Assembler [" + filename + "]")
-        frame.focus()
-
-
-def exitApp():
-    frame.destroy()
-    sys.exit()
-
-
 def reg(neumonic: str):
     """
     given the neumonic (example: $0, $zero, $r1, $v0, etc...)
@@ -1112,22 +1062,27 @@ def compileASM(asm_text):
     cpu_out = ""
     asmlines = re.split("\n", asm_text)
     for i in range(len(asmlines)):
-        asmlines[i] = asmlines[i].split('//')[0].strip()  # discard comments
-        currentLine = i
-        if asmlines[i] == "":
+        line = asmlines[i].split('//')[0].strip()  # discard comments
+
+        if line == "":
             # instruction
             continue
 
-        if asmlines[i][0] == '.':  # directive
+        if line[0] == '.':  # directive
+            d = {
+                ".text": 0,  # defines a text segment that contains read-only executable instructions
+                ".data": 0,  # defines a data segment that contains read/write data (can be read and written)
+                ".stext": 0,  # defines a system text segment that contains system instructions
+                ".sdata": 0,  # defines a system data segment that contains read/write system data
+            }
             # todo:
             continue
-        elif asmlines[i][0] == "@":  # label
-            if asmlines[i] in symbolTable:
-                raise Exception('Duplicate symbol "' +
-                                asmlines[i] + '" at line: ' + str(i))
-            symbolTable[asmlines[i]] = i
+        elif line[0] == "@":  # label
+            if line in symbolTable:
+                raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
+            symbolTable[line] = i
         else:  # instruction
-            cpu_out += str(i) + " => x\"" + decode(asmlines[i]) + "\",\n"
+            cpu_out += str(i) + " => x\"" + decode(line) + "\",\n"
 
     # print cpu_out
     name, ext = os.path.splitext(filename)
@@ -1140,34 +1095,84 @@ def compileASM(asm_text):
     hexfile.close()
 
 
-def compileASM_GUI():
-    return compileASM(textArea.get("1.0", END))
+def main():
+    # Assembler Main code
+
+    # argument parsing
+    parser = ArgumentParser()
+    parser.add_argument('--file', type=str, default="", help='path to the file program file (optional)')
+    cmd_args = parser.parse_args()
+
+    file = cmd_args.file
+
+    # if the user passed a valid filepath, then don't run GUI and just compile it in the command line
+    if file and os.path.isfile(file):
+        file = open(file)
+        compileASM(file.read())
+    else:
+        Tk().withdraw()
+        frame = makeGUI()
+    return
 
 
-# Assembler Main code
-
-# argument parsing
-parser = ArgumentParser()
-parser.add_argument('--file', type=str, default="", help='path to the file program file (optional)')
-args = parser.parse_args()
-
-file = args.file
-
-# if the user passed a valid filepath, then don't run GUI and just compile it in the command line
-if file and os.path.isfile(file):
-    file = open(file)
-    compileASM(file.read())
-else:
-    Tk().withdraw()
+def makeGUI():
     frame = Toplevel()
-
     scrollbar = Scrollbar(frame)
     scrollbar.pack(side=RIGHT, fill=Y)
-    frame.title("muCPU Assembler [" + filename + "]")
+    frame.title("M-Architecture Assembler [" + filename + "]")
     textArea = Text(frame, height=30, width=100, padx=3,
                     pady=3, yscrollcommand=scrollbar.set)
     textArea.pack(side=RIGHT)
     scrollbar.config(command=textArea.yview)
+
+    def openFile():
+        global filename
+        openfilename = askopenfilename()
+        if openfilename is not None:
+            filename = openfilename
+            asmfile = open(filename, "r")
+            asmfile.seek(0)
+            asmdata = asmfile.read()
+            textArea.delete("1.0", "end - 1c")
+            textArea.insert("1.0", asmdata)
+            asmfile.close()
+            filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
+            frame.title("muCPU Assembler [" + filename + "]")
+            frame.focus()
+
+    def saveFile():
+        global filename
+        asmdata = textArea.get("1.0", "end - 1c")
+        asmfile = open(filename, "w")
+        asmfile.seek(0)
+        asmfile.truncate()
+        asmfile.write(asmdata)
+        asmfile.close()
+
+    def saveFileAs():
+        global filename
+        global fileexists
+        saveasfilename = asksaveasfilename()
+        if saveasfilename is not None:
+            filename = saveasfilename
+            fileexists = True
+            asmdata = textArea.get("1.0", "end - 1c")
+            asmfile = open(filename, "w")
+            asmfile.seek(0)
+            asmfile.truncate()
+            asmfile.write(asmdata)
+            asmfile.close()
+            filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
+            frame.title("muCPU Assembler [" + filename + "]")
+            frame.focus()
+
+    def exitApp():
+        frame.destroy()
+        sys.exit()
+
+    def compileASM_GUI():
+        return compileASM(textArea.get("1.0", END))
+
 
     menubar = Menu(frame)
     filemenu = Menu(menubar, tearoff=0)
@@ -1180,7 +1185,11 @@ else:
     runmenu.add_command(label="Compile", command=compileASM_GUI)
     menubar.add_cascade(label="Run", menu=runmenu)
     frame.config(menu=menubar)
-
     frame.minsize(750, 450)
     frame.maxsize(750, 450)
     frame.mainloop()
+    return frame
+
+
+if __name__ == '__main__':
+    main()

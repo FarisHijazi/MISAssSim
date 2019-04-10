@@ -9,7 +9,7 @@ import os.path
 from argparse import ArgumentParser
 import sys
 from tkinter.filedialog import askopenfilename, asksaveasfilename
-import assembler
+import Assembler
 
 
 filename = "Untitled"
@@ -37,7 +37,7 @@ def compileASM(asm_text):
                 raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
             symbolTable[line] = i
         else:  # instruction
-            cpu_out += str(i) + " => x\"" + assembler.decode(line) + "\",\n"
+            cpu_out += str(i) + " => x\"" + Assembler.decode(line) + "\",\n"
 
     # print cpu_out
     name, ext = os.path.splitext(filename)

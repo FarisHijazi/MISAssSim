@@ -122,9 +122,9 @@ def asmtointFPU3(args, opcode, ra, rb, rc, rd, func, imm, p):
 
 def asmtoint5(args, opcode, ra, rb, rc, rd):
     rd = reg(args[1])
-    ra = int(args[2][1:])
-    rb = int(args[3][1:])
-    rc = int(args[4][1:])
+    ra = reg(args[2])
+    rb = reg(args[3])
+    rc = reg(args[4])
     opcode = 41
 
     x, func = sec5_dict[args[0]]
@@ -461,7 +461,24 @@ sec5_dict = {
     "madd": (2, 4),
     "nmadd": (2, 5)
 }
-
+ret_dict = {
+    "retadd": 0,
+    "retnadd": 1,
+    "retand": 2,
+    "retcand": 3,
+    "retor": 4,
+    "retcor": 5,
+    "retxor": 6,
+    "retset": 7,
+    "reteq": 8,
+    "retne": 9,
+    "retlt": 0,
+    "retge": 1,
+    "retltu": 2,
+    "retgeu": 3,
+    "retmin": 4,
+    "retmax": 5,
+}
 
 def asmtointNOP(args, opcode, ra, rb, rc, rd, func, imm, p):
     # FIXME: this is a fake function
@@ -590,62 +607,40 @@ def asmtoint(asm):
     # Section 4
     # Checking if it belongs to ALUI (Opcode 32 - 35)
 
-    # section5
-    elif args[0] in opcodes.get('alu'):
-        if len(args) != 5:
-            raise Exception("Incorrect Number of parameters passed")
-        opcode, ra, rb, rc, rd, func, x = asmtoint5(
-            args, opcode, ra, rb, rc, rd)
-
-    elif (args[0] == "add" or args[0] == "and" or args[0] == "or" or args[0] == "xor"
-          or args[0] == "nadd" or args[0] == "cand" or args[0] == "cor" or args[0] == "xnor"
-          or args[0] == "sub" or args[0] == "andc" or args[0] == "orc"
-          or args[0] == "eq" or args[0] == "ne" or args[0] == "lt" or args[0] == "ge"
-          or args[0] == "ltu" or args[0] == "geu" or args[0] == "min" or args[0] == "max"
-          or args[0] == "gt" or args[0] == "le" or args[0] == "gtu" or args[0] == "leu"):
+    elif args[0] in ["add" , "and" , "or" , "xor", "nadd" , "cand" ,]:
         if len(args) != 5:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, imm = asmtointALUI(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # Checking if it belongs to RET (Opcode 36)
-    elif (args[0] == "retadd" or args[0] == "retnadd" or args[0] == "retand" or args[0] == "retcand"
-          or args[0] == "retor" or args[0] == "retcor" or args[0] == "retxor" or args[0] == "retset"
-          or args[0] == "reteq" or args[0] == "retne" or args[0] == "retlt" or args[0] == "retge"
-          or args[0] == "retltu" or args[0] == "retgeu" or args[0] == "retmin" or args[0] == "retmax"):
+    elif args[0] in ["cor" , "xnor", "sub" , "andc" ,]:
         if len(args) != 4:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, imm = asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p)
     # Checking if it belongs to NOP (Opcode 0)         ############## REVIEW , I have done nothing with this NOP
-    elif args[0] == "nop":
+    elif args[0] == "orc":
         if len(args) != 2:
             raise Exception('Incorrect Number of arguments')
         opcode, imm = asmtointNOP(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # Checking if it belongs to SHIFT (Opcode 37)
-    elif (args[0] == "shlr" or args[0] == "salr" or args[0] == "ror" or args[0] == "mul"
-          or args[0] == "div" or args[0] == "mod" or args[0] == "divu" or args[0] == "modu"
-          or args[0] == "shl" or args[0] == "shr" or args[0] == "sar" or args[0] == "rol"
-          or args[0] == "extr" or args[0] == "extru" or args[0] == "ext" or args[0] == "extu"
-          or args[0] == "insz"):
+    elif args[0] in ["eq" , "ne" , "lt" , "ge", "ltu" ,]:
         if len(args) != 4:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, imm, p = asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # Checking if it belongs to ALU (Opcode 40)
-    elif (args[0] == "add" or args[0] == "nadd" or args[0] == "and" or args[0] == "cand"
-          or args[0] == "or" or args[0] == "cor" or args[0] == "xor" or args[0] == "xnor"
-          or args[0] == "eq" or args[0] == "ne" or args[0] == "lt" or args[0] == "ge"
-          or args[0] == "ltu" or args[0] == "geu" or args[0] == "min" or args[0] == "max"
-          or args[0] == "shl" or args[0] == "shr" or args[0] == "sar" or args[0] == "ror"
-          or args[0] == "mul"
-          or args[0] == "div" or args[0] == "mod" or args[0] == "divu" or args[0] == "modu"
-          or args[0] == "adds"
-          or args[0] == "nadds"
-          or args[0] == "sub" or args[0] == "andc" or args[0] == "orc" or args[0] == "gt"
-          or args[0] == "le" or args[0] == "gtu" or args[0] == "leu"):
+    elif args[0] in ["geu" , "min" , "max", "gt" , "le" , "gtu" , "leu", "retadd" , "retnadd" , "retand" , "retcand",]:
         if len(args) != 4:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, x, rd, n = asmtointALU(args, opcode, ra, rb, rc, rd, func, imm, p)
+
+    # opcode 41
+    elif args[0] in opcodes.get('alu'):
+        if len(args) != 5:
+            raise Exception("Incorrect Number of parameters passed")
+        opcode, ra, rb, rc, rd, func, x = asmtoint5(
+            args, opcode, ra, rb, rc, rd)
 
     else:
         print("Returning all zeroes since the instruction is not recognized")
@@ -761,39 +756,10 @@ def asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p):
     imm = int(args[3])
     opcode = 36
 
-    if args[0] == "retadd":
-        func = 0
-    elif args[0] == "retnadd":
-        func = 1
-    elif args[0] == "retand":
-        func = 2
-    elif args[0] == "retcand":
-        func = 3
-    elif args[0] == "retor":
-        func = 4
-    elif args[0] == "retcor":
-        func = 5
-    elif args[0] == "retxor":
-        func = 6
-    elif args[0] == "retset":
-        func = 7
+    func = ret_dict.get(args[0])
+
+    if func == 7:
         imm = int(args[2])
-    elif args[0] == "reteq":
-        func = 8
-    elif args[0] == "retne":
-        func = 9
-    elif args[0] == "retlt":
-        func = 10
-    elif args[0] == "retge":
-        func = 11
-    elif args[0] == "retltu":
-        func = 12
-    elif args[0] == "retgeu":
-        func = 13
-    elif args[0] == "retmin":
-        func = 14
-    elif args[0] == "retmax":
-        func = 15
 
     return opcode, ra, rb, func, imm
 
@@ -869,8 +835,8 @@ def asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p):
 
 def asmtointALU(args, opcode, ra, rb, rc, rd, func, imm, p):
     rd = reg(args[1])
-    ra = int(args[2][1:])
-    rb = int(args[3][1:])
+    ra = reg(args[2])
+    rb = reg(args[3])
     opcode = 40
     #  x = 0
     if args[0] == "add":
@@ -1055,5 +1021,3 @@ def reg(neumonic: str):
     else:
         if neumonic in registerAliasDict:
             return registerAliasDict.get(neumonic, 0)
-
-

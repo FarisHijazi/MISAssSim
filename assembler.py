@@ -58,6 +58,10 @@ def asmtointsection2(args, opcode, ra, rb, imm):
 
 def asmtoint3(args, opcode):
     func = opcodes['3'][args[0]][1]
+    rc = 0
+    rd = 0
+    imm = 0
+    s = 0
     #Load I-Format
     if(opcode == 24):
         rb = int(args[1][1:])
@@ -73,12 +77,12 @@ def asmtoint3(args, opcode):
         rb = int(args[3][1:])
         ra = int(args[2][1:])
         rd = int(args[1][1:])
-        s = args[4]
+        s = int(args[4])
     elif(opcode == 27):
         rb = int(args[2][1:])
         ra = int(args[1][1:])
-        rd = int(args[4][1:])
-        s = args[3]
+        rc = int(args[4][1:])
+        s = int(args[3])
     return ra, rb, rc, rd, s, func, imm
     
 
@@ -578,11 +582,11 @@ def asmtoint(asm):
         opcode = opcodes['j'][args[0]]
     # Section 3
     elif args[0] in opcodes['3']:
-        opcode = opcodes['3'][args[0]]
+        opcode = opcodes['3'][args[0]][0]
         # Check if it is R-Format (has 5 arguments)
         if(len(args)==5):
-            opcode +=2
-        if(len(args)!=5 or len(args)!=4):
+            opcode = opcode + 2
+        if(len(args)!=5 and len(args)!=4):
             raise Exception(
                 ' Incorrect Number of arguments : ' + str(len(args)))
         ra, rb, rc, rd, s, func, imm = asmtoint3(args, opcode)
@@ -597,7 +601,7 @@ def asmtoint(asm):
             args, opcode, ra, rb, rc, rd, func, x)
 
     else:
-        return 0, 0, 0, 0, 0, 0, 0, 0
+        return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     return opcode, ra, rb, rc, rd, func, imm, p, offset, s, x
 
 
@@ -677,7 +681,7 @@ def compileASM():
         elif asmlines[i][0] == "@":  # label
             if asmlines[i] in symbolTable:
                 raise Exception('Duplicate symbol "' +
-                                asmlines[i] + '" at line: ' + i)
+                                asmlines[i] + '" at line: ' + str(i))
             symbolTable[asmlines[i]] = i
         else:  # instruction
             cpu_out += str(i) + " => x\"" + decode(asmlines[i]) + "\",\n"

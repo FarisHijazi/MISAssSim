@@ -480,6 +480,7 @@ ret_dict = {
     "retmax": 5,
 }
 
+
 def asmtointNOP(args, opcode, ra, rb, rc, rd, func, imm, p):
     # FIXME: this is a fake function
     return opcode, imm
@@ -607,33 +608,33 @@ def asmtoint(asm):
     # Section 4
     # Checking if it belongs to ALUI (Opcode 32 - 35)
 
-    elif args[0] in ["add" , "and" , "or" , "xor", "nadd" , "cand" ,]:
+    elif args[0] in ["add", "and", "or", "xor", "nadd", "cand", ]:
         if len(args) != 5:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, imm = asmtointALUI(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # Checking if it belongs to RET (Opcode 36)
-    elif args[0] in ["cor" , "xnor", "sub" , "andc" ,]:
+    elif args[0] in ["cor", "xnor", "sub", "andc", ]:
         if len(args) != 4:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, imm = asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p)
-    # Checking if it belongs to NOP (Opcode 0)         ############## REVIEW , I have done nothing with this NOP
+    # Checking if it belongs to NOP (Opcode 0)         ############## REVIEW, I have done nothing with this NOP
     elif args[0] == "orc":
         if len(args) != 2:
             raise Exception('Incorrect Number of arguments')
         opcode, imm = asmtointNOP(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # Checking if it belongs to SHIFT (Opcode 37)
-    elif args[0] in ["eq" , "ne" , "lt" , "ge", "ltu" ,]:
+    elif args[0] in ["eq", "ne", "lt", "ge", "ltu", ]:
         if len(args) != 4:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, imm, p = asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # Checking if it belongs to ALU (Opcode 40)
-    elif args[0] in ["geu" , "min" , "max", "gt" , "le" , "gtu" , "leu", "retadd" , "retnadd" , "retand" , "retcand",]:
-        if len(args) != 4:
+    elif args[0] in ["geu", "min", "max", "gt", "le", "gtu", "leu", "retadd", "retnadd", "retand", "retcand", ]:
+        if len(args) != 4:  # WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
             raise Exception('Incorrect Number of arguments')
-        opcode, ra, rb, func, x, rd, n = asmtointALU(args, opcode, ra, rb, rc, rd, func, imm, p)
+        opcode, ra, rb, func, x, rd = asmtointALU(args, opcode)
 
     # opcode 41
     elif args[0] in opcodes.get('alu'):
@@ -833,135 +834,67 @@ def asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p):
     return opcode, ra, rb, func, imm, p
 
 
-def asmtointALU(args, opcode, ra, rb, rc, rd, func, imm, p):
+def asmtointALU(args, opcode):
+    """
+    Note that func and n both share the same variable func
+    :param args:
+    :param opcode:
+    :return: (opcode, ra, rb, func, x, rd)
+    """
     rd = reg(args[1])
     ra = reg(args[2])
     rb = reg(args[3])
     opcode = 40
-    #  x = 0
-    if args[0] == "add":
-        func = 0
-        x = 0
-    elif args[0] == "nadd":
-        func = 1
-        x = 0
-    elif args[0] == "and":
-        func = 2
-        x = 0
-    elif args[0] == "cand":
-        func = 3
-        x = 0
-    elif args[0] == "or":
-        func = 4
-        x = 0
-    elif args[0] == "cor":
-        func = 5
-        x = 0
-    elif args[0] == "xor":
-        func = 6
-        x = 0
-    elif args[0] == "xnor":
-        func = 7
-        x = 0
-    elif args[0] == "eq":
-        func = 8
-        x = 0
-    elif args[0] == "ne":
-        func = 9
-        x = 0
-    elif args[0] == "lt":
-        func = 10
-        x = 0
-    elif args[0] == "ge":
-        func = 11
-        x = 0
-    elif args[0] == "ltu":
-        func = 12
-        x = 0
-    elif args[0] == "geu":
-        func = 13
-        x = 0
-    elif args[0] == "min":
-        func = 14
-        x = 0
-    elif args[0] == "max":
-        func = 15
-        x = 0
-    # x = 1
-    elif args[0] == "shl":
-        func = 0
-        x = 1
-    elif args[0] == "shr":
-        func = 1
-        x = 1
-    elif args[0] == "sar":
-        func = 2
-        x = 1
-    elif args[0] == "ror":
-        func = 3
-        x = 1
-    elif args[0] == "mul":
-        func = 8
-        x = 1
-    elif args[0] == "div":
-        func = 12
-        x = 1
-    elif args[0] == "mod":
-        func = 13
-        x = 1
-    elif args[0] == "divu":
-        func = 14
-        x = 1
-    elif args[0] == "modu":
-        func = 15
-        x = 1
-        # x = 2
-    elif args[0] == "adds":
-        n = reg(args[4])  # n = 0 ~ 15
-        x = 2
 
-        # x = 3
-    elif args[0] == "nadds":
-        n = reg(args[4])  # n = 0 ~ 15
-        x = 3
+    # (func, x, n)
+    opcode40_dict = {
+        "add": (0, 0),
+        "nadd": (1, 0),
+        "and": (2, 0),
+        "cand": (3, 0),
+        "or": (4, 0),
+        "cor": (5, 0),
+        "xor": (6, 0),
+        "xnor": (7, 0),
+        "eq": (8, 0),
+        "ne": (9, 0),
+        "lt": (10, 0),
+        "ge": (11, 0),
+        "ltu": (12, 0),
+        "geu": (13, 0),
+        "min": (14, 0),
+        "max": (15, 0),
+        "shl": (0, 1),
+        "shr": (1, 1),
+        "sar": (2, 1),
+        "ror": (3, 1),
+        "mul": (8, 1),
+        "div": (12, 1),
+        "mod": (13, 1),
+        "divu": (14, 1),
+        "modu": (15, 1),
 
-        # Pseudo-Instructions for ALU
-    elif args[0] == "sub":  # uses nadd, swaps ra & rb
-        func = 1
-        x = 0
-        ra = int(args[3])
-        rb = int(args[2])
-    elif args[0] == "andc":  # uses cand, swaps ra & rb
-        func = 1
-        x = 0
-        ra = int(args[3])
-        rb = int(args[2])
-    elif args[0] == "orc":  # uses cor,  swaps ra & rb
-        func = 1
-        x = 0
-        ra = int(args[3])
-        rb = int(args[2])
-    elif args[0] == "gt":  # uses lt,   swaps ra & rb
-        func = 1
-        x = 0
-        ra = int(args[3])
-        rb = int(args[2])
-    elif args[0] == "le":  # uses ge,   swaps ra & rb
-        func = 1
-        x = 0
-        ra = int(args[3])
-        rb = int(args[2])
-    elif args[0] == "gtu":  # uses ltu,  swaps ra & rb
-        func = 1
-        x = 0
-        ra = int(args[3])
-        rb = int(args[2])
-    elif args[0] == "leu":  # uses geu,  swaps ra & rb
-        func = 1
-        x = 0
-        ra = int(args[3])
-        rb = int(args[2])
-    return opcode, ra, rb, func, x, rd, n
+        "adds": ("n", 2),  # n = 0 ~ 15
+        "nadds": ("n", 2),  # n = 0 ~ 15
+
+        "sub": (1, 0),  # uses nadd, swaps ra & rb
+        "andc": (1, 0),  # uses cand, swaps ra & rb
+        "orc": (1, 0),  # uses cor,  swaps ra & rb
+        "gt": (1, 0),  # uses lt,   swaps ra & rb
+        "le": (1, 0),  # uses ge,   swaps ra & rb
+        "gtu": (1, 0),  # uses ltu,  swaps ra & rb
+        "leu": (1, 0),  # uses geu,  swaps ra & rb
+    }
+
+    func, x = opcode40_dict.get(args[0])
+    if func == "n":
+        func = int(args[2])
+
+    # Pseudo-Instructions for ALU
+    if args[0] in ["sub", "andc", "orc", "gt", "le", "gtu", "leu"]:  # swap
+        ra, rb = rb, ra
+
+    return opcode, ra, rb, func, x, rd
 
 
 def decode(asm):
@@ -1021,5 +954,3 @@ def reg(neumonic: str):
     else:
         if neumonic in registerAliasDict:
             return registerAliasDict.get(neumonic, 0)
-
-

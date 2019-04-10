@@ -13,7 +13,7 @@ import re
 # from tkFileDialog import *
 from tkinter import filedialog
 import os.path
-
+from argparse import ArgumentParser
 import sys
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
@@ -1107,11 +1107,10 @@ def reg(neumonic: str):
             return registerAliasDict.get(neumonic, 0)
 
 
-def compileASM():
+def compileASM(asm_text):
     global filename
     cpu_out = ""
-    asm_in = textArea.get("1.0", END)
-    asmlines = re.split("\n", asm_in)
+    asmlines = re.split("\n", asm_text)
     for i in range(len(asmlines)):
         asmlines[i] = asmlines[i].split('//')[0].strip()  # discard comments
         currentLine = i
@@ -1129,6 +1128,7 @@ def compileASM():
             symbolTable[asmlines[i]] = i
         else:  # instruction
             cpu_out += str(i) + " => x\"" + decode(asmlines[i]) + "\",\n"
+
     # print cpu_out
     name, ext = os.path.splitext(filename)
     hexfilename = name + ".hex"
@@ -1139,32 +1139,48 @@ def compileASM():
     print(cpu_out)
     hexfile.close()
 
+
+def compileASM_GUI():
+    return compileASM(textArea.get("1.0", END))
+
+
 # Assembler Main code
 
+# argument parsing
+parser = ArgumentParser()
+parser.add_argument('--file', type=str, default="", help='path to the file program file (optional)')
+args = parser.parse_args()
 
-Tk().withdraw()
-frame = Toplevel()
+file = args.file
 
-scrollbar = Scrollbar(frame)
-scrollbar.pack(side=RIGHT, fill=Y)
-frame.title("muCPU Assembler [" + filename + "]")
-textArea = Text(frame, height=30, width=100, padx=3,
-                pady=3, yscrollcommand=scrollbar.set)
-textArea.pack(side=RIGHT)
-scrollbar.config(command=textArea.yview)
+# if the user passed a valid filepath, then don't run GUI and just compile it in the command line
+if file and os.path.isfile(file):
+    file = open(file)
+    compileASM(file.read())
+else:
+    Tk().withdraw()
+    frame = Toplevel()
 
-menubar = Menu(frame)
-filemenu = Menu(menubar, tearoff=0)
-filemenu.add_command(label="Open", command=openFile)
-filemenu.add_command(label="Save", command=saveFile, state=DISABLED)
-filemenu.add_command(label="Save as...", command=saveFileAs)
-filemenu.add_command(label="Exit", command=exitApp)
-menubar.add_cascade(label="File", menu=filemenu)
-runmenu = Menu(menubar, tearoff=0)
-runmenu.add_command(label="Compile", command=compileASM)
-menubar.add_cascade(label="Run", menu=runmenu)
-frame.config(menu=menubar)
+    scrollbar = Scrollbar(frame)
+    scrollbar.pack(side=RIGHT, fill=Y)
+    frame.title("muCPU Assembler [" + filename + "]")
+    textArea = Text(frame, height=30, width=100, padx=3,
+                    pady=3, yscrollcommand=scrollbar.set)
+    textArea.pack(side=RIGHT)
+    scrollbar.config(command=textArea.yview)
 
-frame.minsize(750, 450)
-frame.maxsize(750, 450)
-frame.mainloop()
+    menubar = Menu(frame)
+    filemenu = Menu(menubar, tearoff=0)
+    filemenu.add_command(label="Open", command=openFile)
+    filemenu.add_command(label="Save", command=saveFile, state=DISABLED)
+    filemenu.add_command(label="Save as...", command=saveFileAs)
+    filemenu.add_command(label="Exit", command=exitApp)
+    menubar.add_cascade(label="File", menu=filemenu)
+    runmenu = Menu(menubar, tearoff=0)
+    runmenu.add_command(label="Compile", command=compileASM_GUI)
+    menubar.add_cascade(label="Run", menu=runmenu)
+    frame.config(menu=menubar)
+
+    frame.minsize(750, 450)
+    frame.maxsize(750, 450)
+    frame.mainloop()

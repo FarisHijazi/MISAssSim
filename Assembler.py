@@ -84,7 +84,6 @@ def asmtoint3(args, opcode):
         rc = reg(args[4])
         s = int(args[3])
     return ra, rb, rc, rd, s, func, imm
-#######################################################################################3
 
 def asmtointALUI(args,opcode, ra, rb, rc, rd, func, imm, p):
     rb  = int(args[1][1:])
@@ -117,7 +116,7 @@ def asmtointSHIFT(args):
 
 def asmtointALU(args):
     rd     = int(args[1][1:])
-	ra     = int(args[2][1:])
+    ra     = int(args[2][1:])
     rb     = int(args[3][1:])
 	opcode = 40
     

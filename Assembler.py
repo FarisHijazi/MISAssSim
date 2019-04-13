@@ -56,7 +56,8 @@ def asmtointsection2(args, opcode, ra, rb, imm):
 
 
 def asmtoint3(args, opcode):
-    func = opcodes.get('ls').get(args[0])
+    func = opcodes.get('ls').get(args[0])[1]
+    print(str(func))
     rc = 0
     rd = 0
     imm = 0
@@ -65,12 +66,12 @@ def asmtoint3(args, opcode):
     if opcode == 24:
         rb = reg(args[1])
         ra = reg(args[2])
-        imm = args[3]
+        imm = int(args[3])
     # Store I-Format
     elif opcode == 25:
         rb = reg(args[3])
         ra = reg(args[1])
-        imm = args[2]
+        imm = int(args[2])
     # Loadx R-Format
     elif opcode == 26:
         rb = reg(args[3])
@@ -85,15 +86,15 @@ def asmtoint3(args, opcode):
     return ra, rb, rc, rd, s, func, imm
 
 
-def asmtointFPU1(args, opcode, ra, rb, rc, rd, func, imm, p):
+def asmtointFPU1(args):
     rd = reg(args[1])
     ra = reg(args[2])
     opcode = 42
     p, func = fpu1_dict[args[0]]
-    return opcode, ra, rb, rc, rd, func, imm, p
+    return opcode, ra,rd, func, p
 
 
-def asmtointFPU2(args, opcode, ra, rb, rc, rd, func, imm, p):
+def asmtointFPU2(args):
     rd = reg(args[1])
     ra = reg(args[2])
     rb = reg(args[3])
@@ -103,7 +104,7 @@ def asmtointFPU2(args, opcode, ra, rb, rc, rd, func, imm, p):
     if swp:
         ra, rb = rb, ra
 
-    return opcode, ra, rb, rc, rd, func, imm, p
+    return opcode, ra, rb, rd, func, p
 
 
 def asmtointFPU3(args, opcode, ra, rb, rc, rd, func, imm, p):
@@ -120,7 +121,8 @@ def asmtointFPU3(args, opcode, ra, rb, rc, rd, func, imm, p):
     return opcode, ra, rb, rc, rd, func, imm, p
 
 
-def asmtoint5(args, opcode, ra, rb, rc, rd):
+def asmtoint5(args):
+    print("asmtoint5")
     rd = reg(args[1])
     ra = reg(args[2])
     rb = reg(args[3])
@@ -168,18 +170,27 @@ def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x):
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
         rbstr = format(rb, '05b')
-        funcstr = format(offset, '04b')
+        funcstr = format(func, '04b')
         immstr = format(imm, '012b')
         instruction = opstr + rastr + rbstr + funcstr + immstr
     elif opcode == 26 or opcode == 27:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
         rbstr = format(rb, '05b')
-        funcstr = format(offset, '04b')
+        funcstr = format(func, '04b')
         sstr = format(s, '02b')
         rcstr = format(rc, '05b')
         rdstr = format(rd, '05b')
         instruction = opstr + rastr + rbstr + funcstr + sstr + rcstr + rdstr
+    elif opcode == 41:
+        opstr = format(opcode, '06b')
+        rastr = format(ra, '05b')
+        rbstr = format(rb, '05b')
+        funcstr = format(func, '04b')
+        xstr = format(s, '02b')
+        rcstr = format(rc, '05b')
+        rdstr = format(rd, '05b')
+        instruction = opstr + rastr + rbstr + funcstr + xstr + rcstr + rdstr
         # FPU instructions
     elif opcode == 42 or opcode == 43 or opcode == 44:
         opstr = format(opcode, '06b')
@@ -438,22 +449,22 @@ sec5_dict = {
     "andgeu": (1, 5),
     "oreq": (1, 8),
     "orne": (1, 9),
-    "orlt": (1, 0),
-    "orge": (1, 1),
-    "orltu": (1, 2),
-    "orgeu": (1, 3),
-    "min": (1, 4),
-    "max": (1, 5),
+    "orlt": (1, 10),
+    "orge": (1, 11),
+    "orltu": (1, 12),
+    "orgeu": (1, 13),
+    "min": (1, 14),
+    "max": (1, 15),
     "minu": (1, 6),
     "maxu": (1, 7),
     "andgt": (1, 2),
     "andle": (1, 3),
     "andgtu": (1, 4),
     "andleu": (1, 5),
-    "orgt": (1, 0),
-    "orle": (1, 1),
-    "orgtu": (1, 2),
-    "orleu": (1, 3),
+    "orgt": (1, 10),
+    "orle": (1, 11),
+    "orgtu": (1, 12),
+    "orleu": (1, 13),
     "sel": (2, 0),
     "seln": (2, 1),
     "selp": (2, 2),
@@ -497,7 +508,7 @@ def asmtoint(asm):
     print("asm_split", asm_split)
 
     for x in asm_split:
-        if re.search(r'[^\w\d]', x):
+        if re.search(r'[^\w\d.\-]', x):
             raise Exception('Invalid character encountered:', asm)
 
     # print args
@@ -517,20 +528,18 @@ def asmtoint(asm):
     if args[0] in fpu1_dict:
         if len(args) != 3:
             raise Exception('Incorrect Number of arguments')
-        opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU1(
-            args, opcode, ra, rb, rc, rd, func, imm, p)
+        opcode, ra, rd, func, p = asmtointFPU1(args)
     # Checking if FPU2
     elif args[0] in opcodes.get('fpu2'):
         if len(args) != 4:
             raise Exception('Incorrect Number of arguments')
-        opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU2(
-            args, opcode, ra, rb, rc, rd, func, imm, p)
+        opcode, ra, rb, rd, func, p = asmtointFPU2(args)
     elif args[0] in fpu3_dict:
         if len(args) != 5:
             raise Exception(
                 'Incorrect Number of arguments : ' + str(len(args)))
         opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU3(
-            args, opcode, ra, rb, rc, rd, func, imm, p)
+            args, opcode, ra, rb, rd, func, p)
     # These instructions may have args len of 4 or 5 so they are not in previous groupings
     elif args[0] in fpu2_dict:
         if len(args) == 4:
@@ -595,7 +604,7 @@ def asmtoint(asm):
         opcode = opcodes.get('j').get(args[0])
     # Section 3
     elif args[0] in opcodes.get('ls'):
-        opcode = opcodes.get('ls').get(args[0])
+        opcode = opcodes.get('ls').get(args[0])[0]
         # Check if it is R-Format (has 5 arguments)
         if len(args) == 5:
             opcode = opcode + 2
@@ -610,14 +619,15 @@ def asmtoint(asm):
 
     elif args[0] in ["add", "and", "or", "xor", "nadd", "cand", ]:
         if len(args) != 5:
-            raise Exception('Incorrect Number of arguments')
-        opcode, ra, rb, func, imm = asmtointALUI(args, opcode, ra, rb, rc, rd, func, imm, p)
+            opcode, ra, rb, func, imm = asmtointALUI(args, opcode, ra, rb, rc, rd, func, imm, p)
 
     # Checking if it belongs to RET (Opcode 36)
     elif args[0] in ["cor", "xnor", "sub", "andc", ]:
-        if len(args) != 4:
-            raise Exception('Incorrect Number of arguments')
-        opcode, ra, rb, func, imm = asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p)
+        print(args[0])
+        if (len(args) != 4) and args[0]!= "xnor" and args[0]!="cor":# XNOR is in section 5 and contains 5 arguments
+             raise Exception('Incorrect Number of arguments')
+        if len(args) == 4: # This line exists to not include section5 xnor
+            opcode, ra, rb, func, imm = asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p)
     # Checking if it belongs to NOP (Opcode 0)         ############## REVIEW, I have done nothing with this NOP
     elif args[0] == "orc":
         if len(args) != 2:
@@ -632,20 +642,26 @@ def asmtoint(asm):
 
     # Checking if it belongs to ALU (Opcode 40)
     elif args[0] in ["geu", "min", "max", "gt", "le", "gtu", "leu", "retadd", "retnadd", "retand", "retcand", ]:
-        if len(args) != 4:  # WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
+        if len(args) != 4 and args[0]!= "min" and args[0]!="max":  # WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, x, rd = asmtointALU(args, opcode)
-
-    # opcode 41
+    # Opcode 41
     elif args[0] in opcodes.get('alu'):
-        if len(args) != 5:
+        if len(args) != 5 and len(args)!=4:
             raise Exception("Incorrect Number of parameters passed")
-        opcode, ra, rb, rc, rd, func, x = asmtoint5(
-            args, opcode, ra, rb, rc, rd)
-
+        if len(args)==5:
+            opcode, ra, rb, rc, rd, func, x = asmtoint5(args)
     else:
         print("Returning all zeroes since the instruction is not recognized")
         return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+    # opcode 41
+    # This is not elif statement because it shares instruction names with previous elif statements
+    if args[0] in opcodes.get('alu'):
+        if len(args) != 5 and len(args)!=4:
+            raise Exception("Incorrect Number of parameters passed")
+        if len(args)==5:
+            opcode, ra, rb, rc, rd, func, x = asmtoint5(args)
     return opcode, ra, rb, rc, rd, func, imm, p, offset, s, x
 
 

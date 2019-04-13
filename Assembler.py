@@ -183,7 +183,7 @@ def asmtoint5(args):
     return opcode, ra, rb, rc, rd, func, x
 
 
-def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x):
+def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x, n, imm_L, imm_R):
     if opcode == 2 or opcode == 3:
         opstr = format(opcode, '06b')
         offsetstr = format(offset, '026b')
@@ -928,8 +928,8 @@ def decode(asm):
     """
     string line to hex string
     """
-    opcode, ra, rb, rc, rd, func, imm, p, offset, s, x = asmtoint(asm)
-    instruction = inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x)
+    opcode, ra, rb, rc, rd, func, imm, p, offset, s, x, n, imm_L, imm_R = asmtoint(asm)
+    instruction = inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x, n, imm_L, imm_R)
     return instruction
 
 

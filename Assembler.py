@@ -84,6 +84,50 @@ def asmtoint3(args, opcode):
         rc = reg(args[4])
         s = int(args[3])
     return ra, rb, rc, rd, s, func, imm
+#######################################################################################3
+
+def asmtointALUI(args,opcode, ra, rb, rc, rd, func, imm, p):
+    rb  = int(args[1][1:])
+    ra  = int(args[2][1:])
+
+    opcode, func, imm = sec4_ALUI_dict[args[0]]
+	return opcode, ra, rb, func, imm
+
+
+def asmtointRET(args):  
+    ra     = int(args[1][1:])
+    rb     = int(args[2][1:])
+	opcode = 36
+
+    func, imm = sec4_RET_dict[args[0]]
+
+	return opcode, ra, rb, func, imm	
+
+
+
+def asmtointSHIFT(args):
+    rb     = int(args[1][1:])
+    ra     = int(args[2][1:])
+	opcode = 37
+
+    func, imm_L, imm_R, imm = sec4_RET_dict[args[0]] 
+    # imm_R has the same postion as p
+    
+	return opcode, ra, rb, func, imm_L, imm_R, imm		
+
+def asmtointALU(args):
+    rd     = int(args[1][1:])
+	ra     = int(args[2][1:])
+    rb     = int(args[3][1:])
+	opcode = 40
+    
+    func, x, n, swab = sec4_ALU_dict[args[0]]
+    
+    if swab:
+        ra, rb = rb, ra
+        
+    return opcode, ra, rb, func, n, x, rd    
+
 
 
 def asmtointFPU1(args):
@@ -105,7 +149,6 @@ def asmtointFPU2(args):
         ra, rb = rb, ra
 
     return opcode, ra, rb, rd, func, p
-
 
 def asmtointFPU3(args):
     rd = reg(args[1])
@@ -184,6 +227,42 @@ def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x):
         rcstr = format(rc, '05b')
         rdstr = format(rd, '05b')
         instruction = opstr + rastr + rbstr + funcstr + sstr + rcstr + rdstr
+    elif opcode == 32 or opcode == 33 or opcode == 34
+         	 or opcode == 35 or opcode == 36 :
+        opstr = format(opcode, '06b')
+        rastr = format(ra,     '05b')
+        rbstr = format(rb,     '05b')
+		fnstr = format(func,   '04b')
+        imstr = format(imm,    '12b')
+        instruction = opstr + rastr + rbstr + fnstr + imstr
+    elif (opcode == 37):
+        opstr  = format(opcode,   '06b')
+        rastr  = format(ra,       '05b')
+        rbstr  = format(rb,       '05b')
+		fnstr  = format(func,     '04b')
+        imLstr = format(imm_L,    '06b')
+        imRstr = format(imm_R,    '06b')
+        imstr  = format(imm,      '12b')
+        if   imm_L == X and imm_R == X and imm <> X
+          instruction = opstr + rastr + rbstr + fnstr + imstr
+        elif imm_L <> X and imm_R <> X and imm == X
+          instruction = opstr + rastr + rbstr + fnstr + imLstr + imRstr
+        elif imm_L <> X and imm_R == X and imm == X
+          instruction = opstr + rastr + rbstr + fnstr + imLstr 
+        elif imm_L == X and imm_R <> X and imm == X
+          instruction = opstr + rastr + rbstr + fnstr + imRstr 
+	elif (opcode == 40):
+        opstr = format(opcode, '06b')
+        rastr = format(ra,     '05b')
+        rbstr = format(rb,     '05b')
+		fnstr = format(func,   '04b')
+		x_str = format(x,      '02b')
+        n_str = format(n,      '04b')
+        rdstr = format(imm,    '05b')
+        if   x == 0 or x == 1
+        instruction = opstr + rastr + rbstr + fnstr + x_str + rdstr
+        elif x == 2 or x == 3
+        instruction = opstr + rastr + rbstr + n_str + x_str + rdstr
     elif opcode == 41:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
@@ -345,6 +424,119 @@ opcodes = {
         "sub.d": -1,
     }
 }
+
+# opcode, func, imm
+sec4_RET_dict = {
+    "retadd" :  (0,  0, int(args[3]) ),
+    "retnadd":  (1,  0, int(args[3]) ),
+    "retand" :  (2,  1, int(args[3]) ),
+    "retcand":  (3,  1, int(args[3]) ),
+    "retor"  :  (4,  2, int(args[3]) ),
+    "retcor" :  (5,  2, int(args[3]) ),
+    "retxor" :  (6,  4, int(args[3]) ),
+    "retset" :  (7,  4, int(args[2]) ),
+    "reteq"  :  (8,  5, int(args[3]) ),
+    "retne"  :  (9,  5, int(args[3]) ),
+    "retlt"  :  (10, 6, int(args[3]) ),
+    "retge"  :  (11, 6, int(args[3]) ),
+    "retltu" :  (12, 7, int(args[3]) ),
+    "retgeu" :  (13, 7, int(args[3]) ),
+    "retmin" :  (14, 7, int(args[3]) ),
+    "retmax" :  (15, 7, int(args[3]) ),		
+}
+
+# opcode, func, imm
+sec4_ALUI_dict = {
+    "add" :  (32,   0, int(  args[3])),
+    "nadd":  (32,   1, int(  args[3])),
+    "and" :  (32,   2, int(  args[3])),
+    "cand":  (32,   3, int(  args[3])),
+    "or"  :  (33,   4, int(  args[3])),
+    "cor" :  (33,   5, int(  args[3])),
+    "xor" :  (33,   6, int(  args[3])),
+    "set" :  (33,   7, int(  args[2])),
+    "eq"  :  (34,   8, int(  args[3])),
+    "ne"  :  (34,   9, int(  args[3])),
+    "lt"  :  (34,  10, int(  args[3])),
+    "ge"  :  (34,  11, int(  args[3])),
+    "ltu" :  (35,  12, int(  args[3])),
+    "geu" :  (35,  13, int(  args[3])),
+    "min" :  (35,  14, int(  args[3])),
+    "max" :  (35,  15, int(  args[3])),
+	"sub" :  (32,   0, int( -args[3])),
+    "andc":  (32,   0, int( -args[3])),
+    "orc" :  (33,   4, int( -args[3])),
+    "xnor":  (33,   6, int( -args[3])),
+    "mov" :  (33,   4,              0),
+    "neg" :  (32,   1,              0),
+    "not" :  (33,   5,              0),
+    "gt"  :  (32,   0, int(1+args[3])),
+    "le"  :  (32,   0, int(1+args[3])),
+	"gtu" :  (33,   4, int(1+args[3])),
+    "leu" :  (33,   4, int(1+args[3])),
+}     
+
+# func, imm_L, (imm_R  OR  p), imm
+sec4_SHIFT_dict = {
+    "shlr" :  ( 0,  int(args[3]),  int(args[4]),              X),
+    "shlr" :  ( 1,  int(args[3]),  int(args[4]),              X),
+    "salr" :  ( 2,  int(args[3]),  int(args[4]),              X),
+    "ror"  :  ( 3,             X,  int(args[3]),              X),
+    "mul"  :  ( 8,             X,             X,   int(args[3])),
+    "div"  :  (12,             X,             X,   int(args[3])),
+    "mod"  :  (13,             X,             X,   int(args[3])),
+    "divu" :  (14,             X,             X,   int(args[3])),
+    "modu" :  (15,             X,             X,   int(args[3])),
+    "shl"  :  ( 0,  int(args[3]),             X,              X),
+    "shr"  :  ( 0,             X,  int(args[3]),              X),
+    "sar"  :  ( 2,             X,  int(args[3]),              X),
+    "rol"  :  ( 3,             X,  int(args[3]),              X),
+    "extr" :  ( 2,  int(args[3]),  int(args[4]),              X),
+    "extru":  ( 0,  int(args[3]),  int(args[4]),              X),
+    "ext"  :  ( 2,  int(args[3]),             X,              X),
+	"extu" :  ( 0,  int(args[3]),             X,              X),
+    "insz" :  ( 2,  int(args[3]),  int(args[4]),              X),
+
+} 
+
+# func, x, n, swap
+sec4_ALU_dict = {
+    "add"  :  ( 0,  0,                -1,  false),
+    "nadd" :  ( 1,  0,                -1,  false),
+    "and"  :  ( 2,  0,                -1,  false),
+    "cand" :  ( 3,  0,                -1,  false),
+    "or"   :  ( 4,  0,                -1,  false),
+    "cor"  :  ( 5,  0,                -1,  false),
+    "xor"  :  ( 6,  0,                -1,  false),
+    "xnor" :  ( 7,  0,                -1,  false),
+    "eq"   :  ( 8,  0,                -1,  false),
+    "ne"   :  ( 9,  0,                -1,  false),
+    "lt"   :  (10,  0,                -1,  false),
+    "ge"   :  (11,  0,                -1,  false),
+    "ltu"  :  (12,  0,                -1,  false),
+    "geu"  :  (13,  0,                -1,  false),
+    "min"  :  (14,  0,                -1,  false),
+    "max"  :  (15,  0,                -1,  false),
+	"shl"  :  ( 0,  0,                -1,  false),
+    "shr"  :  ( 1,  1,                -1,  false),
+	"sar"  :  ( 2,  1,                -1,  false),
+    "ror"  :  ( 3,  1,                -1,  false),
+    "mul"  :  ( 8,  1,                -1,  false),
+    "div"  :  (12,  1,                -1,  false),
+    "mod"  :  (13,  1,                -1,  false),
+	"divu" :  (14,  1,                -1,  false),
+    "modu" :  (15,  1,                -1,  false),
+	"adds" :  (-1,  2,  int(args[4][1:]),  false),
+	"nadds":  (-1,  3,  int(args[4][1:]),  false),
+    "sub"  :  ( 1,  0,                -1,  true ),
+	"andc" :  ( 1,  0,                -1,  true ),
+	"orc"  :  ( 1,  0,                -1,  true ),
+    "gt"   :  ( 1,  0,                -1,  true ),
+    "le"   :  ( 1,  0,                -1,  true ),
+    "gtu"  :  ( 1,  0,                -1,  true ),                
+	"leu"  :  ( 1,  0,                -1,  true ),		
+}
+
 fpu1_dict = {
     "abs.s": (0, 0),
     "abs.d": (1, 0),
@@ -668,191 +860,6 @@ def asmtoint(asm):
         if len(args)==5:
             opcode, ra, rb, rc, rd, func, x = asmtoint5(args)
     return opcode, ra, rb, rc, rd, func, imm, p, offset, s, x
-
-
-def asmtointALUI(args, opcode, ra, rb, rc, rd, func, imm, p):
-    rb = reg(args[1])
-    ra = reg(args[2])
-    imm = int(args[3])
-
-    # Opcode 32
-    if args[0] == "add":
-        opcode = 32
-        func = 0
-    elif args[0] == "nadd":
-        opcode = 32
-        func = 1
-    elif args[0] == "and":
-        opcode = 32
-        func = 2
-    elif args[0] == "cand":
-        opcode = 32
-        func = 3
-
-        # Opcode 33
-    elif args[0] == "or":
-        opcode = 33
-        func = 4
-    elif args[0] == "cor":
-        opcode = 33
-        func = 5
-    elif args[0] == "xor":
-        opcode = 33
-        func = 6
-    elif args[0] == "set":
-        opcode = 33
-        func = 7
-        imm = int(args[2])
-
-
-    # Opcode 34
-    elif args[0] == "eq":
-        opcode = 34
-        func = 8
-    elif args[0] == "ne":
-        opcode = 34
-        func = 9
-    elif args[0] == "lt":
-        opcode = 34
-        func = 10
-    elif args[0] == "ge":
-        opcode = 34
-        func = 11
-
-        # Opcode 35
-    elif args[0] == "ltu":
-        opcode = 35
-        func = 12
-    elif args[0] == "geu":
-        opcode = 35
-        func = 13
-    elif args[0] == "min":
-        opcode = 35
-        func = 14
-    elif args[0] == "max":
-        opcode = 35
-        func = 15
-
-        # Pseudo-Instructions for ALUI
-    elif args[0] == "sub":  # uses add , -imm
-        opcode = 32
-        func = 0
-        imm = - imm
-    elif args[0] == "mov":  # uses or ,  imm = 0
-        opcode = 33
-        func = 4
-        imm = 0
-    elif args[0] == "neg":  # uses nadd , imm = 0
-        opcode = 32
-        func = 1
-        imm = 0
-    elif args[0] == "not":  # uses cor ,  imm = 0
-        opcode = 33
-        func = 5
-        imm = 0
-
-        # Compare Pseudo-Instructions for ALUI
-    elif args[0] == "gt":  # uses ge  , imm = imm + 1
-        opcode = 32
-        func = 0
-        imm = imm + 1
-    elif args[0] == "le":  # uses lt  , imm = imm + 1
-        opcode = 32
-        func = 0
-        imm = imm + 1
-    elif args[0] == "gtu":  # uses geu , imm = imm + 1
-        opcode = 33
-        func = 4
-        imm = imm + 1
-    elif args[0] == "leu":  # uses ltu , imm = imm + 1
-        opcode = 33
-        func = 4
-        imm = imm + 1
-
-    return opcode, ra, rb, func, imm
-
-
-def asmtointRET(args, opcode, ra, rb, rc, rd, func, imm, p):
-    ra = reg(args[1])
-    rb = reg(args[2])
-    imm = int(args[3])
-    opcode = 36
-
-    func = ret_dict.get(args[0])
-
-    if func == 7:
-        imm = int(args[2])
-
-    return opcode, ra, rb, func, imm
-
-
-def asmtointSHIFT(args, opcode, ra, rb, rc, rd, func, imm, p):
-    rb = reg(args[1])
-    ra = reg(args[2])
-    opcode = 37
-    if args[0] == "shlr":
-        func = 0
-        imm_L = int(args[3])
-        imm_R = int(args[4])
-    elif args[0] == "shlr":
-        func = 1
-        imm_L = int(args[3])
-        imm_R = int(args[4])
-    elif args[0] == "salr":
-        func = 2
-        imm_L = int(args[3])
-        imm_R = int(args[4])
-    elif args[0] == "ror":  # only 3 args, imm_R is the 3rd arg
-        func = 3
-        imm_R = int(args[3])
-    elif args[0] == "mul":  # only 3 args, imm   is the 3rd arg
-        func = 8
-        imm = int(args[3])
-    elif args[0] == "div":  # only 3 args, imm   is the 3rd arg
-        func = 12
-        imm = int(args[3])
-    elif args[0] == "mod":  # only 3 args, imm   is the 3rd arg
-        func = 13
-        imm = int(args[3])
-    elif args[0] == "divu":  # only 3 args, imm   is the 3rd arg
-        func = 14
-        imm = int(args[3])
-    elif args[0] == "modu":  # only 3 args, imm   is the 3rd arg
-        func = 15
-        imm = int(args[3])
-        # Pseudo-Instructions for SHIFT
-    elif args[0] == "shl":  # uses shlr, imm_R = 0
-        func = 0
-        imm_L = int(args[3])
-    elif args[0] == "shr":  # uses shlr, imm_L = 0
-        func = 0
-        imm_R = int(args[3])
-    elif args[0] == "sar":  # uses salr, imm_L = 0
-        func = 2
-        imm_R = int(args[3])
-    elif args[0] == "rol":  # uses ror,  imm_R = 64 - imm_R
-        func = 3
-        imm_R = int(args[3])
-    elif args[0] == "extr":  # uses salr, imm_L = 64 - imm_L - p,  imm_R = 64 - imm_L
-        func = 2
-        imm_L = int(args[3])
-        p = int(args[4])
-    elif args[0] == "extru":  # uses shlr, imm_L = 64 - imm_L - p
-        func = 0
-        imm_L = int(args[3])
-        p = int(args[4])
-    elif args[0] == "ext":  # uses salr, imm_L = 64 - imm_L,  imm_R = 64 - imm_L
-        func = 2
-        imm_L = int(args[3])
-    elif args[0] == "extu":  # uses shlr, imm_L = 3rd arg
-        func = 0
-        imm_L = int(args[3])
-    elif args[0] == "insz":  # uses salr, imm_L = 3rd arg
-        func = 2
-        imm_L = int(args[3])
-        p = int(args[4])
-
-    return opcode, ra, rb, func, imm, p
 
 
 def asmtointALU(args, opcode):

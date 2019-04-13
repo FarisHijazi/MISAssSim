@@ -107,18 +107,20 @@ def asmtointFPU2(args):
     return opcode, ra, rb, rd, func, p
 
 
-def asmtointFPU3(args, opcode, ra, rb, rc, rd, func, imm, p):
+def asmtointFPU3(args):
     rd = reg(args[1])
     ra = reg(args[2])
     rb = reg(args[3])
     rc = reg(args[4])
     opcode = 44
+    if(args[0]=="min.d" or args[0]=="max.d"):
+        opcode = 43
     p, func, swp = fpu3_dict[args[0]]
 
     if swp:
         rc, rb = rb, rc
 
-    return opcode, ra, rb, rc, rd, func, imm, p
+    return opcode, ra, rb, rc, rd, func, p
 
 
 def asmtoint5(args):
@@ -373,6 +375,7 @@ fpu2_dict = {
     "inf.d": (1, 4, False),
     "nan.s": (0, 5, False),
     "nan.d": (1, 5, False),
+
     "add.s": (0, 8, False),
     "add.d": (1, 8, False),
     "nadd.s": (0, 9, False),
@@ -385,6 +388,7 @@ fpu2_dict = {
     "min.d": (1, 12, False),
     "max.s": (0, 13, False),
     "max.d": (1, 13, False),
+
     "gt.s": (0, 2, True),
     "gt.d": (1, 2, True),
     "le.s": (0, 3, True),
@@ -524,30 +528,31 @@ def asmtoint(asm):
     s = 0
     offset = 0
 
-    # Checking if the opcode is of type FPU1
+    # Section 6 FPU1
     if args[0] in fpu1_dict:
         if len(args) != 3:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rd, func, p = asmtointFPU1(args)
-    # Checking if FPU2
-    elif args[0] in opcodes.get('fpu2'):
-        if len(args) != 4:
+    # Section 6 FPU2
+    elif args[0] in fpu2_dict:
+        # Check if common between fpu2 and fpu3
+        if args[0] in fpu3_dict:
+            if len(args) == 4:
+                opcode, ra, rb, rd, func, p = asmtointFPU2(args)
+            elif len(args) == 5:
+                opcode, ra, rb, rc, rd, func, p = asmtointFPU3(args)
+            else:
+                raise Exception('Incorrect Number of arguments'+ str(len(args)))
+        elif len(args) != 4:
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, rd, func, p = asmtointFPU2(args)
+    # Section 6 FPU3    
     elif args[0] in fpu3_dict:
         if len(args) != 5:
             raise Exception(
                 'Incorrect Number of arguments : ' + str(len(args)))
-        opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU3(
-            args, opcode, ra, rb, rd, func, p)
-    # These instructions may have args len of 4 or 5 so they are not in previous groupings
-    elif args[0] in fpu2_dict:
-        if len(args) == 4:
-            opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU2(
-                args, opcode, ra, rb, rc, rd, func, imm, p)
-        elif len(args) == 5:
-            opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU3(
-                args, opcode, ra, rb, rc, rd, func, imm, p)
+        opcode, ra, rb, rc, rd, func, p = asmtointFPU3(args)
+
 
     # SECTION 2 branches
     elif args[0] in opcodes.get('b'):
@@ -645,7 +650,7 @@ def asmtoint(asm):
         if len(args) != 4 and args[0]!= "min" and args[0]!="max":  # WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
             raise Exception('Incorrect Number of arguments')
         opcode, ra, rb, func, x, rd = asmtointALU(args, opcode)
-    # Opcode 41
+    # Section 5 Opcode 41
     elif args[0] in opcodes.get('alu'):
         if len(args) != 5 and len(args)!=4:
             raise Exception("Incorrect Number of parameters passed")

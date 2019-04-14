@@ -88,6 +88,37 @@ def asmtoint3(args, opcode):
 def asmtointALUI(args,opcode, ra, rb, rc, rd, func, imm, p):
     rb  = int(args[1])
     ra  = int(args[2])
+    
+    # opcode, func, imm
+sec4_ALUI_dict = {
+    "add" :  (32,   0, int(args[3])),
+    "nadd":  (32,   1, int(args[3])),
+    "and" :  (32,   2, int(args[3])),
+    "cand":  (32,   3, int(args[3])),
+    "or"  :  (33,   4, int(args[3])),
+    "cor" :  (33,   5, int(args[3])),
+    "xor" :  (33,   6, int(args[3])),
+    "set" :  (33,   7, int(args[2])),
+    "eq"  :  (34,   8, int(args[3])),
+    "ne"  :  (34,   9, int(args[3])),
+    "lt"  :  (34,  10, int(args[3])),
+    "ge"  :  (34,  11, int(args[3])),
+    "ltu" :  (35,  12, int(args[3])),
+    "geu" :  (35,  13, int(args[3])),
+    "min" :  (35,  14, int(args[3])),
+    "max" :  (35,  15, int(args[3])),
+    "sub" :  (32,   0, int(args[3])),
+    "andc":  (32,   0, int(args[3])),
+    "orc" :  (33,   4, int(args[3])),
+    "xnor":  (33,   6, int(args[3])),
+    "mov" :  (33,   4,            0),
+    "neg" :  (32,   1,            0),
+    "not" :  (33,   5,            0),
+    "gt"  :  (32,   0, int(args[3])),
+    "le"  :  (32,   0, int(args[3])),
+    "gtu" :  (33,   4, int(args[3])),
+    "leu" :  (33,   4, int(args[3])),
+}     
 
     opcode, func, imm = sec4_ALUI_dict[args[0]]
     return opcode, ra, rb, func, imm
@@ -97,6 +128,26 @@ def asmtointRET(args):
     ra     = int(args[1][1:])
     rb     = int(args[2][1:])
     opcode = 36
+    
+    # opcode, func, imm
+sec4_RET_dict = {
+    "retadd" :  (0,  0, int(args[3]) ),
+    "retnadd":  (1,  0, int(args[3]) ),
+    "retand" :  (2,  1, int(args[3]) ),
+    "retcand":  (3,  1, int(args[3]) ),
+    "retor"  :  (4,  2, int(args[3]) ),
+    "retcor" :  (5,  2, int(args[3]) ),
+    "retxor" :  (6,  4, int(args[3]) ),
+    "retset" :  (7,  4, int(args[2]) ),
+    "reteq"  :  (8,  5, int(args[3]) ),
+    "retne"  :  (9,  5, int(args[3]) ),
+    "retlt"  :  (10, 6, int(args[3]) ),
+    "retge"  :  (11, 6, int(args[3]) ),
+    "retltu" :  (12, 7, int(args[3]) ),
+    "retgeu" :  (13, 7, int(args[3]) ),
+    "retmin" :  (14, 7, int(args[3]) ),
+    "retmax" :  (15, 7, int(args[3]) ),        
+}
 
     func, imm = sec4_RET_dict[args[0]]
 
@@ -108,6 +159,29 @@ def asmtointSHIFT(args):
     rb     = int(args[1][1:])
     ra     = int(args[2][1:])
     opcode = 37
+    
+    # func, imm_L, (imm_R  OR  p), imm
+sec4_SHIFT_dict = {
+    "shlr" :  ( 0,  int(args[3]),  int(args[4]),              X),
+    "shlr" :  ( 1,  int(args[3]),  int(args[4]),              X),
+    "salr" :  ( 2,  int(args[3]),  int(args[4]),              X),
+    "ror"  :  ( 3,             X,  int(args[3]),              X),
+    "mul"  :  ( 8,             X,             X,   int(args[3])),
+    "div"  :  (12,             X,             X,   int(args[3])),
+    "mod"  :  (13,             X,             X,   int(args[3])),
+    "divu" :  (14,             X,             X,   int(args[3])),
+    "modu" :  (15,             X,             X,   int(args[3])),
+    "shl"  :  ( 0,  int(args[3]),             X,              X),
+    "shr"  :  ( 0,             X,  int(args[3]),              X),
+    "sar"  :  ( 2,             X,  int(args[3]),              X),
+    "rol"  :  ( 3,             X,  int(args[3]),              X),
+    "extr" :  ( 2,  int(args[3]),  int(args[4]),              X),
+    "extru":  ( 0,  int(args[3]),  int(args[4]),              X),
+    "ext"  :  ( 2,  int(args[3]),             X,              X),
+    "extu" :  ( 0,  int(args[3]),             X,              X),
+    "insz" :  ( 2,  int(args[3]),  int(args[4]),              X),
+
+} 
 
     func, imm_L, imm_R, imm = sec4_RET_dict[args[0]] 
     # imm_R has the same postion as p
@@ -119,6 +193,44 @@ def asmtointALU(args):
     ra     = int(args[2][1:])
     rb     = int(args[3][1:])
     opcode = 40
+    
+    # func, x, n, swap
+sec4_ALU_dict = {
+    "add"  :  ( 0,  0,                -1,  false),
+    "nadd" :  ( 1,  0,                -1,  false),
+    "and"  :  ( 2,  0,                -1,  false),
+    "cand" :  ( 3,  0,                -1,  false),
+    "or"   :  ( 4,  0,                -1,  false),
+    "cor"  :  ( 5,  0,                -1,  false),
+    "xor"  :  ( 6,  0,                -1,  false),
+    "xnor" :  ( 7,  0,                -1,  false),
+    "eq"   :  ( 8,  0,                -1,  false),
+    "ne"   :  ( 9,  0,                -1,  false),
+    "lt"   :  (10,  0,                -1,  false),
+    "ge"   :  (11,  0,                -1,  false),
+    "ltu"  :  (12,  0,                -1,  false),
+    "geu"  :  (13,  0,                -1,  false),
+    "min"  :  (14,  0,                -1,  false),
+    "max"  :  (15,  0,                -1,  false),
+    "shl"  :  ( 0,  0,                -1,  false),
+    "shr"  :  ( 1,  1,                -1,  false),
+    "sar"  :  ( 2,  1,                -1,  false),
+    "ror"  :  ( 3,  1,                -1,  false),
+    "mul"  :  ( 8,  1,                -1,  false),
+    "div"  :  (12,  1,                -1,  false),
+    "mod"  :  (13,  1,                -1,  false),
+    "divu" :  (14,  1,                -1,  false),
+    "modu" :  (15,  1,                -1,  false),
+    "adds" :  (-1,  2,  int(args[4][1:]),  false),
+    "nadds":  (-1,  3,  int(args[4][1:]),  false),
+    "sub"  :  ( 1,  0,                -1,  true ),
+    "andc" :  ( 1,  0,                -1,  true ),
+    "orc"  :  ( 1,  0,                -1,  true ),
+    "gt"   :  ( 1,  0,                -1,  true ),
+    "le"   :  ( 1,  0,                -1,  true ),
+    "gtu"  :  ( 1,  0,                -1,  true ),                
+    "leu"  :  ( 1,  0,                -1,  true ),        
+}
     
     func, x, n, swab = sec4_ALU_dict[args[0]]
     
@@ -241,14 +353,14 @@ def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x, n, imm_L, imm_R
         imLstr = format(imm_L,    '06b')
         imRstr = format(imm_R,    '06b')
         imstr  = format(imm,      '12b')
-    #  #   if   imm_L == X and imm_R == X and imm <> X
-    #       instruction = opstr + rastr + rbstr + fnstr + imstr
-    #     elif imm_L <> X and imm_R <> X and imm == X
-    #       instruction = opstr + rastr + rbstr + fnstr + imLstr + imRstr
-    #     elif imm_L <> X and imm_R == X and imm == X
-    #       instruction = opstr + rastr + rbstr + fnstr + imLstr 
-    #     elif imm_L == X and imm_R <> X and imm == X
-        instruction = opstr + rastr + rbstr + fnstr + imRstr 
+         if   imm_L == X and imm_R == X and imm <> X
+            instruction = opstr + rastr + rbstr + fnstr + imstr
+         elif imm_L <> X and imm_R <> X and imm == X
+            instruction = opstr + rastr + rbstr + fnstr + imLstr + imRstr
+         elif imm_L <> X and imm_R == X and imm == X
+            instruction = opstr + rastr + rbstr + fnstr + imLstr 
+         elif imm_L == X and imm_R <> X and imm == X
+            instruction = opstr + rastr + rbstr + fnstr + imRstr 
     elif (opcode == 40):
         opstr = format(opcode, '06b')
         rastr = format(ra,     '05b')
@@ -423,117 +535,13 @@ opcodes = {
     }
 }
 
-# opcode, func, imm
-sec4_RET_dict = {
-    "retadd" :  (0,  0, int(args[3]) ),
-    "retnadd":  (1,  0, int(args[3]) ),
-    "retand" :  (2,  1, int(args[3]) ),
-    "retcand":  (3,  1, int(args[3]) ),
-    "retor"  :  (4,  2, int(args[3]) ),
-    "retcor" :  (5,  2, int(args[3]) ),
-    "retxor" :  (6,  4, int(args[3]) ),
-    "retset" :  (7,  4, int(args[2]) ),
-    "reteq"  :  (8,  5, int(args[3]) ),
-    "retne"  :  (9,  5, int(args[3]) ),
-    "retlt"  :  (10, 6, int(args[3]) ),
-    "retge"  :  (11, 6, int(args[3]) ),
-    "retltu" :  (12, 7, int(args[3]) ),
-    "retgeu" :  (13, 7, int(args[3]) ),
-    "retmin" :  (14, 7, int(args[3]) ),
-    "retmax" :  (15, 7, int(args[3]) ),        
-}
 
-# opcode, func, imm
-sec4_ALUI_dict = {
-    "add" :  (32,   0, int(  args[3])),
-    "nadd":  (32,   1, int(  args[3])),
-    "and" :  (32,   2, int(  args[3])),
-    "cand":  (32,   3, int(  args[3])),
-    "or"  :  (33,   4, int(  args[3])),
-    "cor" :  (33,   5, int(  args[3])),
-    "xor" :  (33,   6, int(  args[3])),
-    "set" :  (33,   7, int(  args[2])),
-    "eq"  :  (34,   8, int(  args[3])),
-    "ne"  :  (34,   9, int(  args[3])),
-    "lt"  :  (34,  10, int(  args[3])),
-    "ge"  :  (34,  11, int(  args[3])),
-    "ltu" :  (35,  12, int(  args[3])),
-    "geu" :  (35,  13, int(  args[3])),
-    "min" :  (35,  14, int(  args[3])),
-    "max" :  (35,  15, int(  args[3])),
-    "sub" :  (32,   0, int( -args[3])),
-    "andc":  (32,   0, int( -args[3])),
-    "orc" :  (33,   4, int( -args[3])),
-    "xnor":  (33,   6, int( -args[3])),
-    "mov" :  (33,   4,              0),
-    "neg" :  (32,   1,              0),
-    "not" :  (33,   5,              0),
-    "gt"  :  (32,   0, int(1+args[3])),
-    "le"  :  (32,   0, int(1+args[3])),
-    "gtu" :  (33,   4, int(1+args[3])),
-    "leu" :  (33,   4, int(1+args[3])),
-}     
 
-# func, imm_L, (imm_R  OR  p), imm
-sec4_SHIFT_dict = {
-    "shlr" :  ( 0,  int(args[3]),  int(args[4]),              X),
-    "shlr" :  ( 1,  int(args[3]),  int(args[4]),              X),
-    "salr" :  ( 2,  int(args[3]),  int(args[4]),              X),
-    "ror"  :  ( 3,             X,  int(args[3]),              X),
-    "mul"  :  ( 8,             X,             X,   int(args[3])),
-    "div"  :  (12,             X,             X,   int(args[3])),
-    "mod"  :  (13,             X,             X,   int(args[3])),
-    "divu" :  (14,             X,             X,   int(args[3])),
-    "modu" :  (15,             X,             X,   int(args[3])),
-    "shl"  :  ( 0,  int(args[3]),             X,              X),
-    "shr"  :  ( 0,             X,  int(args[3]),              X),
-    "sar"  :  ( 2,             X,  int(args[3]),              X),
-    "rol"  :  ( 3,             X,  int(args[3]),              X),
-    "extr" :  ( 2,  int(args[3]),  int(args[4]),              X),
-    "extru":  ( 0,  int(args[3]),  int(args[4]),              X),
-    "ext"  :  ( 2,  int(args[3]),             X,              X),
-    "extu" :  ( 0,  int(args[3]),             X,              X),
-    "insz" :  ( 2,  int(args[3]),  int(args[4]),              X),
 
-} 
 
-# func, x, n, swap
-sec4_ALU_dict = {
-    "add"  :  ( 0,  0,                -1,  false),
-    "nadd" :  ( 1,  0,                -1,  false),
-    "and"  :  ( 2,  0,                -1,  false),
-    "cand" :  ( 3,  0,                -1,  false),
-    "or"   :  ( 4,  0,                -1,  false),
-    "cor"  :  ( 5,  0,                -1,  false),
-    "xor"  :  ( 6,  0,                -1,  false),
-    "xnor" :  ( 7,  0,                -1,  false),
-    "eq"   :  ( 8,  0,                -1,  false),
-    "ne"   :  ( 9,  0,                -1,  false),
-    "lt"   :  (10,  0,                -1,  false),
-    "ge"   :  (11,  0,                -1,  false),
-    "ltu"  :  (12,  0,                -1,  false),
-    "geu"  :  (13,  0,                -1,  false),
-    "min"  :  (14,  0,                -1,  false),
-    "max"  :  (15,  0,                -1,  false),
-    "shl"  :  ( 0,  0,                -1,  false),
-    "shr"  :  ( 1,  1,                -1,  false),
-    "sar"  :  ( 2,  1,                -1,  false),
-    "ror"  :  ( 3,  1,                -1,  false),
-    "mul"  :  ( 8,  1,                -1,  false),
-    "div"  :  (12,  1,                -1,  false),
-    "mod"  :  (13,  1,                -1,  false),
-    "divu" :  (14,  1,                -1,  false),
-    "modu" :  (15,  1,                -1,  false),
-    "adds" :  (-1,  2,  int(args[4][1:]),  false),
-    "nadds":  (-1,  3,  int(args[4][1:]),  false),
-    "sub"  :  ( 1,  0,                -1,  true ),
-    "andc" :  ( 1,  0,                -1,  true ),
-    "orc"  :  ( 1,  0,                -1,  true ),
-    "gt"   :  ( 1,  0,                -1,  true ),
-    "le"   :  ( 1,  0,                -1,  true ),
-    "gtu"  :  ( 1,  0,                -1,  true ),                
-    "leu"  :  ( 1,  0,                -1,  true ),        
-}
+
+
+
 
 fpu1_dict = {
     "abs.s": (0, 0),

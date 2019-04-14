@@ -90,7 +90,7 @@ def asmtointALUI(args,opcode, ra, rb, rc, rd, func, imm, p):
     ra  = int(args[2])
     
     # opcode, func, imm
-sec4_ALUI_dict = {
+    sec4_ALUI_dict = {
     "add" :  (32,   0,   int(args[3])),
     "nadd":  (32,   1,   int(args[3])),
     "and" :  (32,   2,   int(args[3])),
@@ -118,7 +118,7 @@ sec4_ALUI_dict = {
     "le"  :  (32,   0, 1+int(args[3])),
     "gtu" :  (33,   4, 1+int(args[3])),
     "leu" :  (33,   4, 1+int(args[3])),
-}     
+    }    
 
     opcode, func, imm = sec4_ALUI_dict[args[0]]
     return opcode, ra, rb, func, imm
@@ -130,7 +130,7 @@ def asmtointRET(args):
     opcode = 36
     
     # opcode, func, imm
-sec4_RET_dict = {
+    sec4_RET_dict = {
     "retadd" :  (0,  0,   int(args[3])),
     "retnadd":  (1,  0,   int(args[3])),
     "retand" :  (2,  1,   int(args[3])),
@@ -147,7 +147,7 @@ sec4_RET_dict = {
     "retgeu" :  (13, 7,   int(args[3])),
     "retmin" :  (14, 7,   int(args[3])),
     "retmax" :  (15, 7,   int(args[3])),        
-}
+    }
 
     func, imm = sec4_RET_dict[args[0]]
 
@@ -161,7 +161,7 @@ def asmtointSHIFT(args):
     opcode = 37
     
     # func, imm_L, (imm_R  OR  p), imm
-sec4_SHIFT_dict = {
+    sec4_SHIFT_dict = {
     "shlr" :  ( 0,  int(args[3]),  int(args[4]),              X),
     "shlr" :  ( 1,  int(args[3]),  int(args[4]),              X),
     "salr" :  ( 2,  int(args[3]),  int(args[4]),              X),
@@ -181,7 +181,7 @@ sec4_SHIFT_dict = {
     "extu" :  ( 0,  int(args[3]),             X,              X),
     "insz" :  ( 2,  int(args[3]),  int(args[4]),              X),
 
-} 
+    } 
 
     func, imm_L, imm_R, imm = sec4_RET_dict[args[0]] 
     # imm_R has the same postion as p
@@ -195,7 +195,7 @@ def asmtointALU(args):
     opcode = 40
     
     # func, x, n, swap
-sec4_ALU_dict = {
+    sec4_ALU_dict = {
     "add"  :  ( 0,  0,                -1,  false),
     "nadd" :  ( 1,  0,                -1,  false),
     "and"  :  ( 2,  0,                -1,  false),
@@ -230,7 +230,7 @@ sec4_ALU_dict = {
     "le"   :  ( 1,  0,                -1,  true ),
     "gtu"  :  ( 1,  0,                -1,  true ),                
     "leu"  :  ( 1,  0,                -1,  true ),        
-}
+    }
     
     func, x, n, swab = sec4_ALU_dict[args[0]]
     
@@ -353,13 +353,13 @@ def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x, n, imm_L, imm_R
         imLstr = format(imm_L,    '06b')
         imRstr = format(imm_R,    '06b')
         imstr  = format(imm,      '12b')
-         if   imm_L == X and imm_R == X and imm <> X
+        if   imm_L == X and imm_R == X and imm != X:
             instruction = opstr + rastr + rbstr + fnstr + imstr
-         elif imm_L <> X and imm_R <> X and imm == X
+        elif imm_L != X and imm_R != X and imm == X:
             instruction = opstr + rastr + rbstr + fnstr + imLstr + imRstr
-         elif imm_L <> X and imm_R == X and imm == X
+        elif imm_L != X and imm_R == X and imm == X:
             instruction = opstr + rastr + rbstr + fnstr + imLstr 
-         elif imm_L == X and imm_R <> X and imm == X
+        elif imm_L == X and imm_R != X and imm == X:
             instruction = opstr + rastr + rbstr + fnstr + imRstr 
     elif (opcode == 40):
         opstr = format(opcode, '06b')

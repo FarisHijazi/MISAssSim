@@ -1,0 +1,166 @@
+// Section 3 I-Format
+add.s R4 = R1, R2, R3
+
+lb r3 = [r2, 3]
+lh r3 = [r2, 3]
+lw r3 = [r2, 3]
+ld r3 = [r2, 3]
+
+lbu r3 = [r2, 3]
+lhu r3 = [r2, 3]
+lwu r3 = [r2, 3]
+ldu r3 = [r2, 3]
+
+sb [R2, 3] = R3 
+sh [R2, 3] = R3 
+sw [R2, 3] = R3 
+sd [R2, 3] = R3 
+
+// R-Format
+lb R4 = [R1, R2, 3]
+lh R4 = [R1, R2, 3]
+lw R4 = [R1, R2, 3]
+ld R4 = [R1, R2, 3]
+
+lbu R4 = [R1, R2, 3]
+lhu R4 = [R1, R2, 3]
+lwu R4 = [R1, R2, 3]
+ldu R4 = [R1, R2, 3]
+
+sb [R1, R2, 2] = R3
+sh [R1, R2, 2] = R3
+sw [R1, R2, 2] = R3
+sd [R1, R2, 2] = R3
+
+// Section 5
+
+add r4 = r1, r2, r3
+and r4 = r1, r2, r3
+or r4 = r1, r2, r3
+xor r4 = r1, r2, r3
+
+nadd r4 = r1, r2, r3
+cand r4 = r1, r2, r3
+cor r4 = r1, r2, r3
+xnor r4 = r1, r2, r3
+
+andeq R4 = R1, R2, R3
+andne R4 = R1, R2, R3
+andlt R4 = R1, R2, R3
+andge R4 = R1, R2, R3
+andltu R4 = R1, R2, R3
+andgeu R4 = R1, R2, R3
+
+oreq R4 = R1, R2, R3
+orne R4 = R1, R2, R3
+orlt R4 = R1, R2, R3
+orge R4 = R1, R2, R3
+orltu R4 = R1, R2, R3
+orgeu R4 = R1, R2, R3
+
+min R4 = R1, R2, R3
+max R4 = R1, R2, R3
+minu R4 = R1, R2, R3
+maxu R4 = R1, R2, R3
+
+abs.s R4 = R1
+abs.d R4 = R1
+neg.s R4 = R1
+neg.d R4 = R1
+sqrt.s R4 = R1
+sqrt.d R4 = R1
+cvts.d R4 = R1
+cvtd.s R4 = R1
+cvts.i R4 = R1
+cvtd.i R4 = R1
+cvti.s R4 = R1
+cvti.d R4 = R1
+rint.s R4 = R1
+rint.d R4 = R1
+
+eq.s R4 = R1, R2
+eq.d R4 = R1, R2
+ne.s R4 = R1, R2
+ne.d R4 = R1, R2
+lt.s R4 = R1, R2
+lt.d R4 = R1, R2
+ge.s R4 = R1, R2
+ge.d R4 = R1, R2
+inf.s R4 = R1, R2
+inf.d R4 = R1, R2
+nan.s R4 = R1, R2
+nan.d R4 = R1, R2
+
+gt.s R4 = R2, R1
+gt.d R4 = R2, R1
+le.s R4 = R2, R1
+le.d R4 = R2, R1
+
+add.s R4 = R1, R2 
+add.d R4 = R1, R2 
+nadd.s R4 = R1, R2 
+nadd.d R4 = R1, R2 
+mul.s R4 = R1, R2 
+mul.d R4 = R1, R2 
+div.s R4 = R1, R2 
+div.d R4 = R1, R2 
+min.s R4 = R1, R2 
+min.d R4 = R1, R2 
+max.s R4 = R1, R2 
+max.d R4 = R1, R2 
+
+sub.s R4 = R1, R2 
+sub.d R4 = R1, R2
+
+// bad opcode
+add.s R4 = R1, R2, R3
+add.d R4 = R1, R2, R3
+nadd.s R4 = R1, R2, R3
+nadd.d R4 = R1, R2, R3
+madd.s R4 = R1, R2, R3
+madd.d R4 = R1, R2, R3
+nmadd.s R4 = R1, R2, R3
+nmadd.d R4 = R1, R2, R3
+min.s R4 = R1, R2, R3
+min.d R4 = R1, R2, R3
+max.s R4 = R1, R2, R3
+max.d R4 = R1, R2, R3
+
+andeq.s R4 = R1, R2, R3
+andeq.d R4 = R1, R2, R3
+andne.s R4 = R1, R2, R3
+andne.d R4 = R1, R2, R3
+andlt.s R4 = R1, R2, R3
+andlt.d R4 = R1, R2, R3
+andge.s R4 = R1, R2, R3
+andge.d R4 = R1, R2, R3
+
+oreq.s R4 = R1, R2, R3
+oreq.d R4 = R1, R2, R3
+orne.s R4 = R1, R2, R3
+orne.d R4 = R1, R2, R3
+orlt.s R4 = R1, R2, R3
+orlt.d R4 = R1, R2, R3
+orge.s R4 = R1, R2, R3
+orge.d R4 = R1, R2, R3
+
+andgt.s R4 = R1, R2, R3
+andgt.d R4 = R1, R2, R3
+andle.s R4 = R1, R2, R3
+andle.d R4 = R1, R2, R3
+
+orgt.s R4 = R1, R2, R3
+orgt.s R4 = R1, R2, R3
+orle.s R4 = R1, R2, R3
+orle.s R4 = R1, R2, R3
+
+// # These instructions may have args len of 4 or 5 so they are not in previous groupings
+// elif args[0] in fpu2_dict:
+//     if len(args) == 4:
+//         opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU2(args)
+//     elif len(args) == 5:
+//         opcode, ra, rb, rc, rd, func, imm, p = asmtointFPU3(args)
+
+
+
+

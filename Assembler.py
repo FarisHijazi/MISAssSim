@@ -189,47 +189,47 @@ def asmtointSHIFT(args):
     return opcode, ra, rb, func, imm_L, imm_R, imm        
 
 def asmtointALU(args):
-    rd     = int(args[1][1:])
-    ra     = int(args[2][1:])
-    rb     = int(args[3][1:])
+    rd     = int(args[1])
+    ra     = int(args[2])
+    rb     = int(args[3])
     opcode = 40
     
     # func, x, n, swap
     sec4_ALU_dict = {
-    "add"  :  ( 0,  0,                -1,  false),
-    "nadd" :  ( 1,  0,                -1,  false),
-    "and"  :  ( 2,  0,                -1,  false),
-    "cand" :  ( 3,  0,                -1,  false),
-    "or"   :  ( 4,  0,                -1,  false),
-    "cor"  :  ( 5,  0,                -1,  false),
-    "xor"  :  ( 6,  0,                -1,  false),
-    "xnor" :  ( 7,  0,                -1,  false),
-    "eq"   :  ( 8,  0,                -1,  false),
-    "ne"   :  ( 9,  0,                -1,  false),
-    "lt"   :  (10,  0,                -1,  false),
-    "ge"   :  (11,  0,                -1,  false),
-    "ltu"  :  (12,  0,                -1,  false),
-    "geu"  :  (13,  0,                -1,  false),
-    "min"  :  (14,  0,                -1,  false),
-    "max"  :  (15,  0,                -1,  false),
-    "shl"  :  ( 0,  0,                -1,  false),
-    "shr"  :  ( 1,  1,                -1,  false),
-    "sar"  :  ( 2,  1,                -1,  false),
-    "ror"  :  ( 3,  1,                -1,  false),
-    "mul"  :  ( 8,  1,                -1,  false),
-    "div"  :  (12,  1,                -1,  false),
-    "mod"  :  (13,  1,                -1,  false),
-    "divu" :  (14,  1,                -1,  false),
-    "modu" :  (15,  1,                -1,  false),
-    "adds" :  (-1,  2,  int(args[4][1:]),  false),
-    "nadds":  (-1,  3,  int(args[4][1:]),  false),
-    "sub"  :  ( 1,  0,                -1,  true ),
-    "andc" :  ( 1,  0,                -1,  true ),
-    "orc"  :  ( 1,  0,                -1,  true ),
-    "gt"   :  ( 1,  0,                -1,  true ),
-    "le"   :  ( 1,  0,                -1,  true ),
-    "gtu"  :  ( 1,  0,                -1,  true ),                
-    "leu"  :  ( 1,  0,                -1,  true ),        
+    "add"  :  ( 0,  0,                -1,  False),
+    "nadd" :  ( 1,  0,                -1,  False),
+    "and"  :  ( 2,  0,                -1,  False),
+    "cand" :  ( 3,  0,                -1,  False),
+    "or"   :  ( 4,  0,                -1,  False),
+    "cor"  :  ( 5,  0,                -1,  False),
+    "xor"  :  ( 6,  0,                -1,  False),
+    "xnor" :  ( 7,  0,                -1,  False),
+    "eq"   :  ( 8,  0,                -1,  False),
+    "ne"   :  ( 9,  0,                -1,  False),
+    "lt"   :  (10,  0,                -1,  False),
+    "ge"   :  (11,  0,                -1,  False),
+    "ltu"  :  (12,  0,                -1,  False),
+    "geu"  :  (13,  0,                -1,  False),
+    "min"  :  (14,  0,                -1,  False),
+    "max"  :  (15,  0,                -1,  False),
+    "shl"  :  ( 0,  0,                -1,  False),
+    "shr"  :  ( 1,  1,                -1,  False),
+    "sar"  :  ( 2,  1,                -1,  False),
+    "ror"  :  ( 3,  1,                -1,  False),
+    "mul"  :  ( 8,  1,                -1,  False),
+    "div"  :  (12,  1,                -1,  False),
+    "mod"  :  (13,  1,                -1,  False),
+    "divu" :  (14,  1,                -1,  False),
+    "modu" :  (15,  1,                -1,  False),
+    "adds" :  (-1,  2,  int(args[4][1:]),  False),
+    "nadds":  (-1,  3,  int(args[4][1:]),  False),
+    "sub"  :  ( 1,  0,                -1,  True ),
+    "andc" :  ( 1,  0,                -1,  True ),
+    "orc"  :  ( 1,  0,                -1,  True ),
+    "gt"   :  ( 1,  0,                -1,  True ),
+    "le"   :  ( 1,  0,                -1,  True ),
+    "gtu"  :  ( 1,  0,                -1,  True ),                
+    "leu"  :  ( 1,  0,                -1,  True ),        
     }
     
     func, x, n, swab = sec4_ALU_dict[args[0]]
@@ -724,6 +724,9 @@ def asmtoint(asm):
     p = 0
     x = 0
     s = 0
+    n= 0
+    imm_L = 0
+    imm_R = 0
     offset = 0
 
     # Section 6 FPU1
@@ -865,7 +868,7 @@ def asmtoint(asm):
             raise Exception("Incorrect Number of parameters passed")
         if len(args)==5:
             opcode, ra, rb, rc, rd, func, x = asmtoint5(args)
-    return opcode, ra, rb, rc, rd, func, imm, p, offset, s, x
+    return opcode, ra, rb, rc, rd, func, imm, p, offset, s, x, n, imm_L, imm_R
 
 
 def asmtointALU(args, opcode):

@@ -86,39 +86,39 @@ def asmtoint3(args, opcode):
     return ra, rb, rc, rd, s, func, imm
 
 def asmtointALUI(args,opcode, ra, rb, rc, rd, func, imm, p):
-    rb  = int(args[1][1:])
-    ra  = int(args[2][1:])
+    rb  = int(args[1])
+    ra  = int(args[2])
 
     opcode, func, imm = sec4_ALUI_dict[args[0]]
-	return opcode, ra, rb, func, imm
+    return opcode, ra, rb, func, imm
 
 
 def asmtointRET(args):  
     ra     = int(args[1][1:])
     rb     = int(args[2][1:])
-	opcode = 36
+    opcode = 36
 
     func, imm = sec4_RET_dict[args[0]]
 
-	return opcode, ra, rb, func, imm	
+    return opcode, ra, rb, func, imm    
 
 
 
 def asmtointSHIFT(args):
     rb     = int(args[1][1:])
     ra     = int(args[2][1:])
-	opcode = 37
+    opcode = 37
 
     func, imm_L, imm_R, imm = sec4_RET_dict[args[0]] 
     # imm_R has the same postion as p
     
-	return opcode, ra, rb, func, imm_L, imm_R, imm		
+    return opcode, ra, rb, func, imm_L, imm_R, imm        
 
 def asmtointALU(args):
     rd     = int(args[1][1:])
     ra     = int(args[2][1:])
     rb     = int(args[3][1:])
-	opcode = 40
+    opcode = 40
     
     func, x, n, swab = sec4_ALU_dict[args[0]]
     
@@ -226,42 +226,41 @@ def inttohex(opcode, ra, rb, rc, rd, func, imm, p, offset, s, x, n, imm_L, imm_R
         rcstr = format(rc, '05b')
         rdstr = format(rd, '05b')
         instruction = opstr + rastr + rbstr + funcstr + sstr + rcstr + rdstr
-    elif opcode == 32 or opcode == 33 or opcode == 34
-         	 or opcode == 35 or opcode == 36 :
+    elif opcode == 32 or opcode == 33 or opcode == 34 or opcode == 35 or opcode == 36 :
         opstr = format(opcode, '06b')
         rastr = format(ra,     '05b')
         rbstr = format(rb,     '05b')
-		fnstr = format(func,   '04b')
+        fnstr = format(func,   '04b')
         imstr = format(imm,    '12b')
         instruction = opstr + rastr + rbstr + fnstr + imstr
     elif (opcode == 37):
         opstr  = format(opcode,   '06b')
         rastr  = format(ra,       '05b')
         rbstr  = format(rb,       '05b')
-		fnstr  = format(func,     '04b')
+        fnstr  = format(func,     '04b')
         imLstr = format(imm_L,    '06b')
         imRstr = format(imm_R,    '06b')
         imstr  = format(imm,      '12b')
-        if   imm_L == X and imm_R == X and imm <> X
-          instruction = opstr + rastr + rbstr + fnstr + imstr
-        elif imm_L <> X and imm_R <> X and imm == X
-          instruction = opstr + rastr + rbstr + fnstr + imLstr + imRstr
-        elif imm_L <> X and imm_R == X and imm == X
-          instruction = opstr + rastr + rbstr + fnstr + imLstr 
-        elif imm_L == X and imm_R <> X and imm == X
-          instruction = opstr + rastr + rbstr + fnstr + imRstr 
-	elif (opcode == 40):
+    #  #   if   imm_L == X and imm_R == X and imm <> X
+    #       instruction = opstr + rastr + rbstr + fnstr + imstr
+    #     elif imm_L <> X and imm_R <> X and imm == X
+    #       instruction = opstr + rastr + rbstr + fnstr + imLstr + imRstr
+    #     elif imm_L <> X and imm_R == X and imm == X
+    #       instruction = opstr + rastr + rbstr + fnstr + imLstr 
+    #     elif imm_L == X and imm_R <> X and imm == X
+        instruction = opstr + rastr + rbstr + fnstr + imRstr 
+    elif (opcode == 40):
         opstr = format(opcode, '06b')
         rastr = format(ra,     '05b')
         rbstr = format(rb,     '05b')
-		fnstr = format(func,   '04b')
-		x_str = format(x,      '02b')
+        fnstr = format(func,   '04b')
+        x_str = format(x,      '02b')
         n_str = format(n,      '04b')
         rdstr = format(imm,    '05b')
-        if   x == 0 or x == 1
-        instruction = opstr + rastr + rbstr + fnstr + x_str + rdstr
-        elif x == 2 or x == 3
-        instruction = opstr + rastr + rbstr + n_str + x_str + rdstr
+        if   x == 0 or x == 1:
+            instruction = opstr + rastr + rbstr + fnstr + x_str + rdstr
+        elif x == 2 or x == 3:
+            instruction = opstr + rastr + rbstr + n_str + x_str + rdstr
     elif opcode == 41:
         opstr = format(opcode, '06b')
         rastr = format(ra, '05b')
@@ -441,7 +440,7 @@ sec4_RET_dict = {
     "retltu" :  (12, 7, int(args[3]) ),
     "retgeu" :  (13, 7, int(args[3]) ),
     "retmin" :  (14, 7, int(args[3]) ),
-    "retmax" :  (15, 7, int(args[3]) ),		
+    "retmax" :  (15, 7, int(args[3]) ),        
 }
 
 # opcode, func, imm
@@ -462,7 +461,7 @@ sec4_ALUI_dict = {
     "geu" :  (35,  13, int(  args[3])),
     "min" :  (35,  14, int(  args[3])),
     "max" :  (35,  15, int(  args[3])),
-	"sub" :  (32,   0, int( -args[3])),
+    "sub" :  (32,   0, int( -args[3])),
     "andc":  (32,   0, int( -args[3])),
     "orc" :  (33,   4, int( -args[3])),
     "xnor":  (33,   6, int( -args[3])),
@@ -471,7 +470,7 @@ sec4_ALUI_dict = {
     "not" :  (33,   5,              0),
     "gt"  :  (32,   0, int(1+args[3])),
     "le"  :  (32,   0, int(1+args[3])),
-	"gtu" :  (33,   4, int(1+args[3])),
+    "gtu" :  (33,   4, int(1+args[3])),
     "leu" :  (33,   4, int(1+args[3])),
 }     
 
@@ -493,7 +492,7 @@ sec4_SHIFT_dict = {
     "extr" :  ( 2,  int(args[3]),  int(args[4]),              X),
     "extru":  ( 0,  int(args[3]),  int(args[4]),              X),
     "ext"  :  ( 2,  int(args[3]),             X,              X),
-	"extu" :  ( 0,  int(args[3]),             X,              X),
+    "extu" :  ( 0,  int(args[3]),             X,              X),
     "insz" :  ( 2,  int(args[3]),  int(args[4]),              X),
 
 } 
@@ -516,24 +515,24 @@ sec4_ALU_dict = {
     "geu"  :  (13,  0,                -1,  false),
     "min"  :  (14,  0,                -1,  false),
     "max"  :  (15,  0,                -1,  false),
-	"shl"  :  ( 0,  0,                -1,  false),
+    "shl"  :  ( 0,  0,                -1,  false),
     "shr"  :  ( 1,  1,                -1,  false),
-	"sar"  :  ( 2,  1,                -1,  false),
+    "sar"  :  ( 2,  1,                -1,  false),
     "ror"  :  ( 3,  1,                -1,  false),
     "mul"  :  ( 8,  1,                -1,  false),
     "div"  :  (12,  1,                -1,  false),
     "mod"  :  (13,  1,                -1,  false),
-	"divu" :  (14,  1,                -1,  false),
+    "divu" :  (14,  1,                -1,  false),
     "modu" :  (15,  1,                -1,  false),
-	"adds" :  (-1,  2,  int(args[4][1:]),  false),
-	"nadds":  (-1,  3,  int(args[4][1:]),  false),
+    "adds" :  (-1,  2,  int(args[4][1:]),  false),
+    "nadds":  (-1,  3,  int(args[4][1:]),  false),
     "sub"  :  ( 1,  0,                -1,  true ),
-	"andc" :  ( 1,  0,                -1,  true ),
-	"orc"  :  ( 1,  0,                -1,  true ),
+    "andc" :  ( 1,  0,                -1,  true ),
+    "orc"  :  ( 1,  0,                -1,  true ),
     "gt"   :  ( 1,  0,                -1,  true ),
     "le"   :  ( 1,  0,                -1,  true ),
     "gtu"  :  ( 1,  0,                -1,  true ),                
-	"leu"  :  ( 1,  0,                -1,  true ),		
+    "leu"  :  ( 1,  0,                -1,  true ),        
 }
 
 fpu1_dict = {

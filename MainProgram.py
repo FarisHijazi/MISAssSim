@@ -12,6 +12,7 @@ from tkinter.filedialog import askopenfilename, asksaveasfilename
 import Assembler
 
 
+
 filename = "Untitled"
 fileexists = False
 symbolTable = {}
@@ -19,7 +20,9 @@ global currentLine
 
 
 def compileASM(asm_text):
+    from AssembledFile import AssembledFile
     global filename
+    assembledFile = AssembledFile(asm_text)
     cpu_out = ""
     asmlines = re.split("\n", asm_text)
     for i in range(len(asmlines)):
@@ -38,12 +41,12 @@ def compileASM(asm_text):
             symbolTable[line] = i
         else:  # instruction
 
-            try:
-                cpu_out += str(i) + " => x\"" + Assembler.decode(line) + "\",\n"
-            except Exception as e:
-                print('Exception:'
-                      '\nwhile decoding instruction: "{}"'
-                      '\nThe issue is that:\n\n{}'.format(str(line), str(e)))
+            # try:
+            cpu_out += str(i) + " => x\"" + Assembler.decode(line) + "\",\n"
+            # except Exception as e:
+            #     print('Exception:'
+            #           '\nwhile decoding instruction: "{}"'
+            #           '\nThe issue is that:\n\n{}'.format(str(line), str(e)))
 
     # print cpu_out
     name, ext = os.path.splitext(filename)
@@ -54,6 +57,13 @@ def compileASM(asm_text):
     hexfile.write(cpu_out)
     print(cpu_out)
     hexfile.close()
+    return assembledFile
+
+# execute 1 instruction
+def step():
+    i = 0 #idx TODO: fix dis    (incomplete)
+    instruction = assembledFile.directiveSegments.get('.text')[i]
+    instructin.execute(sim)
 
 
 def main():
@@ -151,6 +161,16 @@ def makeGUI():
     frame.mainloop()
     return frame
 
+
+class Simulator:
+    def __init__():
+    # self.regfile = {
+    #     'gp':gprf,
+    #     'fp':regFile
+    # }
+    #  = Regfile(names={}, regwidth=32)
+    # self.mem
+        pass
 
 if __name__ == '__main__':
     main()

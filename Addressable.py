@@ -1,5 +1,6 @@
 import Assembler
 import MainProgram as sim
+import re
 
 """
 Conventions:
@@ -12,7 +13,7 @@ class Addressable:
     # __globalAddressTable__: dict  # stores every single `Addressable` object
 
 
-    def __init__(self, size=1, startAddress=-1, lineStr='', enforceAlignment=True):
+    def __init__(self, size=4, startAddress=-1, lineStr='', enforceAlignment=True):
         """
         :param size: number of bytes to allocate
         :param start: optional - if not indicated,
@@ -65,6 +66,18 @@ class DataBlock(Addressable):
 class Instruction(Addressable):
     def __init__(self, lineStr, address=-1):
         super(Instruction, self).__init__(size=1, startAddress=address, lineStr=lineStr)
+        
+        asmLine = lineStr.split('//')[0].strip()
+
+        regex = re.compile(r"[,\s()=\[|\]]+")
+        
+        args = [arg for arg in (re.split(regex, asmLine)) if arg != ""]
+        for x in args:
+            if re.search(r'[^\w\d.\-]', x):
+                raise Exception('Invalid character encountered:', asmLine)
+
+        self.asmLine = asmLine
+
         self.sim = sim  # the simulator instance
         self.type = self.getType()
 
@@ -95,6 +108,8 @@ class Instruction(Addressable):
 
         self.operands: list  # list of operands
 
+        Assembler.decodeInstruction(self)
+
 
     # TODO: these should be moved to the Assembler
     sections = {}
@@ -120,7 +135,7 @@ class Instruction(Addressable):
 
     def getFormat(self) -> str:
         pass
-
+    
     def __str__(self):
         s=""
         attrs = ['opcode', 'ra', 'rb', 'rc', 'rd', 'func', 'imm', 'p', 'offset', 's', 'x', 'n', 'imm_L', 'imm_R']
@@ -257,27 +272,27 @@ class Instruction(Addressable):
                 elif func == 3:     # CAND  [sign extend imm to 64 bits]
                     rb = ~ra & imm
                 elif func == 4:     # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra | imm 
+                    rb =  ra | imm
                 elif func == 5:     # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~ra | imm 
+                    rb = ~ra | imm
                 elif func == 6:     # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra ^ imm 
+                    rb =  ra ^ imm
                 elif func == 7:     # SET   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = imm 
+                    rb = imm
                 elif func == 8:     # EQ    [sign extend imm to 64 bits & use 1 NOP]
                     rb = (ra == imm) 
                 elif func == 9:     # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm)  
+                    rb = (ra != imm) 
                 elif func == 10:    # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra < imm)  
-                elif func == 11:    # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm) 
-                elif func == 12:    # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
                     rb = (ra < imm) 
+                elif func == 11:    # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rb = (ra > imm)
+                elif func == 12:    # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (ra < imm)
                 elif func == 13:    # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra > imm) 
+                    rb = (ra > imm)
                 elif func == 14:    # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra,imm) 
+                    rb = min(ra,imm)
                 elif func == 15:    # MAX   [sign extend imm to 64 bits & use 2 NOP]
                     rb = max(ra,imm)
                 
@@ -360,9 +375,9 @@ class Instruction(Addressable):
                         rd = ra // rb    
                     elif func == 15:     # MODU [unsigned]?
                         rd = ra %  rb
-                elif x == 3:             # ADDS   Rd = Ra + Rb<<n
+                elif x == 3:             # ADDS  Rd = Ra + Rb<<n
                    rd =  ra + (rb<<n) 
-                elif x == 4:             # NADDS  Rd = -Ra + Rb<<n           
+                elif x == 4:             # NADDS Rd = -Ra + Rb<<n           
                    rd = -ra + (rb<<n)    
   
                    

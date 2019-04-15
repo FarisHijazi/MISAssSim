@@ -37,7 +37,13 @@ def compileASM(asm_text):
                 raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
             symbolTable[line] = i
         else:  # instruction
-            cpu_out += str(i) + " => x\"" + Assembler.decode(line) + "\",\n"
+
+            try:
+                cpu_out += str(i) + " => x\"" + Assembler.decode(line) + "\",\n"
+            except Exception as e:
+                print('Exception:'
+                      '\nwhile decoding instruction: "{}"'
+                      '\nThe issue is that:\n\n{}'.format(str(line), str(e)))
 
     # print cpu_out
     name, ext = os.path.splitext(filename)

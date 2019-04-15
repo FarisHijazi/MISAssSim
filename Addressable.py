@@ -289,16 +289,16 @@ class Instruction(Addressable):
                     rb =  ra & imm
                 elif func == 3:      # ROR  [ not sure about how to rotate bitwise ] 
                     pass #do
-                elif func == 8:      # MUL  [ im not sure why there is a MUL in the SHIFT section, IT'S NOT EVEN EXPLAINED! ]
-                    pass #do 
-                elif func == 12:     # DIV  [ SAME ]
-                    pass #do 
-                elif func == 13:     # MOD  [ SAME ]
-                    pass #do 
-                elif func == 14:     # DIVU [ SAME ]
-                    pass #do 
-                elif func == 15:     # MODU [ SAME ]
-                    pass #do 
+                elif func == 8:      # MUL  [signed]?
+                    rb = ra  * imm
+                elif func == 12:     # DIV  [signed]?  
+                    rb = ra // imm
+                elif func == 13:     # MOD  [signed]? 
+                    rb = ra %  imm
+                elif func == 14:     # DIVU [unsigned]?
+                    rb = ra // imm   
+                elif func == 15:     # MODU [unsigned]?
+                    rb = ra %  imm
                 
                 
             # for opcode 40

@@ -87,6 +87,7 @@ opcodes = {
         'blez': 10
     },
 
+    # (opcode, func)
     'ls': {
         # All instructions below come in I-Format or R-Format
         'lb': (24, 4),
@@ -186,7 +187,7 @@ fpu1_dict = {
     "rint.s": (0, 7),
     "rint.d": (1, 7),
 }
-# mnemonic: (p, func, swap_ra_rb)
+# neumonic: (p, func, swap_ra_rb)
 fpu2_dict = {
     "eq.s": (0, 0, False),
     "eq.d": (1, 0, False),
@@ -221,7 +222,7 @@ fpu2_dict = {
     "sub.s": (0, 9, True),
     "sub.d": (1, 9, True),
 }
-# mnemonic: (p, func, swap_rc_rb)
+# neumonic: (p, func, swap_rc_rb)
 fpu3_dict = {
     "add.s": (0, 8, False),
     "add": (1, 8, False),
@@ -260,7 +261,7 @@ fpu3_dict = {
     "orle.s": (0, 7, True),
     "orle.d": (1, 7, True),
 }
-# key: mnemonic, value: (x, func)
+# key: neumonic, value: (x, func)
 sec5_dict = {
     "add": (0, 0),
     "and": (0, 2),
@@ -363,8 +364,9 @@ def asmtointsection2(d):
 
 # d.ra, d.rbi, rc, d.rd, s, d.func, d.imm =
 def asmtoint3(d):
-    func = opcodes.get('ls').get(d.op)[1]
-    print(str(func))
+    #sec3.6
+    # d.opcodes, d.func = opcodes.get('ls').get(d.op)
+    print(str(d.func))
 
     # Load I-Format
     if d.opcode == 24:
@@ -373,16 +375,16 @@ def asmtoint3(d):
         d.imm = int(d.args[3])
     # Store I-Format
     elif d.opcode == 25:
-        d.rb = d.args[3]
+        d.rb = d.args[2]
         d.ra = d.args[1]
-        d.imm = int(d.args[2])
+        d.imm = int(d.args[3])
     # Loadx R-Format
     elif d.opcode == 26:
         d.rb = d.args[3]
         d.ra = d.args[2]
         d.rd = d.args[1]
         d.s = int(d.args[4])
-    elif d.opcode == 27:
+    elif d.opcode == 27: # loadx
         d.rb = d.args[2]
         d.ra = d.args[1]
         d.rc = d.args[4]
@@ -396,7 +398,7 @@ def asmtoint3(d):
     if hasattr(d, 'rd'):
         d.rdi = reg(d.rd)
 
-    # return ra, d.rbi, rc, d.rdi, s, func, d.imm
+    # return ra, d.rbi, rc, d.rdi, s, d.func, d.imm
 
 
 # d.opcode, d.ra, d.rbi, d.func, d.imm
@@ -407,7 +409,7 @@ def asmtointALUI(d):
     d.rbi = int(d.b)
     d.rai = int(d.a)
 
-    # : (opcode, func, imm)
+    # : (opcode, d.func, imm)
     sec4_ALUI_dict = {
         "add": (32, 0, int(d.args[3])),
         "nadd": (32, 1, int(d.args[3])),
@@ -739,62 +741,41 @@ def asmtointNOP(d):
 
 
 def asmtoint(asm):
-    regex = re.compile(r"[,\s()=\[|\]]+")
-    args = [arg for arg in (re.split(regex, asm)) if arg != ""]
-    for x in args:
-        if re.search(r'[^\w\d.\-]', x):
-            raise Exception('Invalid character encountered:', asm)
+    if isinstance(asm, str):
+        return decodeInstruction(Instruction(asm))
+    return decodeInstruction(asm)
 
-    d = Instruction(asm)
-    # d = {
-    #     'args': args,
-    #
-    #     'opcode': None,
-    #     'func': None,
-    #     'rd': None,
-    #     'ra': None,
-    #     'rb': None,
-    #     'rc': None,
-    #     'imm': None,
-    #     'p': None,
-    #     'x': None,
-    #     's': None,
-    #     'n': None,
-    #     'imm_L': None,
-    #     'imm_R': None,
-    #     'offset': None,
-    # }
-
+def decodeInstruction(d: Instruction):
     # Section 6 FPU1
     if d.op in fpu1_dict:
-        if len(args) != 3:
+        if len(d.args) != 3:
             raise Exception('Incorrect Number of arguments')
         asmtointFPU1(d)
     # Section 6 FPU2
     elif d.op in fpu2_dict:
         # Check if common between fpu2 and fpu3
         if d.op in fpu3_dict:
-            if len(args) == 4:
+            if len(d.args) == 4:
                 asmtointFPU2(d)
-            elif len(args) == 5:
+            elif len(d.args) == 5:
                 asmtointFPU3(d)
             else:
-                raise Exception('Incorrect Number of arguments' + str(len(args)))
-        elif len(args) != 4:
+                raise Exception('Incorrect Number of arguments' + str(len(d.args)))
+        elif len(d.args) != 4:
             raise Exception('Incorrect Number of arguments')
         asmtointFPU2(d)
     # Section 6 FPU3    
     elif d.op in fpu3_dict:
-        if len(args) != 5:
+        if len(d.args) != 5:
             raise Exception(
-                'Incorrect Number of arguments : ' + str(len(args)))
+                'Incorrect Number of arguments : ' + str(len(d.args)))
         asmtointFPU3(d)
 
 
     # SECTION 2 branches
     elif d.op in opcodes.get('b'):
-        if len(args) != 4:
-            raise Exception('Incorrect Number of arguments : ' + str(len(args)))
+        if len(d.args) != 4:
+            raise Exception('Incorrect Number of arguments : ' + str(len(d.args)))
         # Check if user used immediate or register version of the instruction
         if d.args[2][0] != "r":
             d.op = d.op + "i"
@@ -804,8 +785,8 @@ def asmtoint(asm):
         d.offset = symbolTable[label] - currentLine
         d.ra, d.rbi, d.imm = asmtointsection2(d)
     elif d.op in opcodes.get('bzero'):
-        if len(args) != 3:
-            raise Exception('Incorrect Number of arguments : ' + str(len(args)))
+        if len(d.args) != 3:
+            raise Exception('Incorrect Number of arguments : ' + str(len(d.args)))
 
         d.opcode = opcodes.get('b').get(d.op)
         label = d.args[2]
@@ -817,84 +798,83 @@ def asmtoint(asm):
             label = d.args[1]
             d.offset = symbolTable[label] - currentLine
         elif d.op == "jr":
-            if len(args) == 3:
+            if len(d.args) == 3:
                 label = d.args[2]
                 d.offset = symbolTable[label] - currentLine
-            elif len(args) == 2:
+            elif len(d.args) == 2:
                 d.offset = 0
             else:
                 raise Exception(
-                    'Incorrect Number of arguments : ' + str(len(args)))
+                    'Incorrect Number of arguments : ' + str(len(d.args)))
             d.ra = int(d.args[1])
         elif d.op == "jalr":
-            if len(args) == 4:
+            if len(d.args) == 4:
                 label = d.args[3]
                 d.offset = symbolTable[label] - currentLine
-            elif len(args) == 3:
+            elif len(d.args) == 3:
                 d.offset = 0
             else:
-                raise Exception('Incorrect Number of arguments : ' + str(len(args)))
+                raise Exception('Incorrect Number of arguments : ' + str(len(d.args)))
             d.ra = reg(d.args[2])
             d.rbi = reg(d.args[1])
         elif d.op == "ret":
-            if len(args) != 1:
+            if len(d.args) != 1:
                 raise Exception(
-                    'Incorrect Number of arguments : ' + str(len(args)))
+                    'Incorrect Number of arguments : ' + str(len(d.args)))
             d.offset = 0
             d.ra = 31
         d.opcode = opcodes.get('j').get(d.op)
     # Section 3
     elif d.op in opcodes.get('ls'):
-        d.opcode = opcodes.get('ls').get(d.op)[0]
+        d.opcode, d.func = opcodes.get('ls').get(d.op)
         # Check if it is R-Format (has 5 arguments)
-        if len(args) == 5:
+        if len(d.args) == 5: # convertng I to R type (P21) 
             d.opcode += 2
-        if len(args) != 5 and len(args) != 4:
-            raise Exception(
-                'Incorrect Number of arguments : ' + str(len(args)))
+        if len(d.args) != 5 and len(d.args) != 4:
+            raise Exception('Incorrect Number of arguments : ' + str(len(d.args)))
         asmtoint3(d)
     # Section 4
     # Checking if it belongs to ALUI (Opcode 32 - 35)
-    elif len(args) == 5 and d.op in ["add", "and", "or", "xor", "nadd", "cand", "cor", "xnor", "sub", "andc", "orc", 
+    elif len(d.args) == 5 and d.op in ["add", "and", "or", "xor", "nadd", "cand", "cor", "xnor", "sub", "andc", "orc", 
                                      "eq", "ne", "lt", "ge", "ltu", "geu", "min", "max", "gt", "le", "gtu", "leu"]:
-        if len(args) != 5:
+        if len(d.args) != 5:
             asmtointALUI(d)
 
     # Checking if it belongs to RET (Opcode 36)
     elif d.op in ["retadd", "retnadd", "retand", "retcand", "retor", "retcor", "retxor", "retset", 
                   "reteq", "retne", "retlt", "retge", "retltu", "retgeu", "retmin", "retmax"]:
         print(d.op)
-        if (len(args) != 4) and d.op != "xnor" and d.op != "cor":  # XNOR is in section 5 and contains 5 arguments
+        if (len(d.args) != 4) and d.op != "xnor" and d.op != "cor":  # XNOR is in section 5 and contains 5 arguments
             raise Exception('Incorrect Number of arguments')
-        if len(args) == 4:  # This line exists to not include section5 xnor
+        if len(d.args) == 4:  # This line exists to not include section5 xnor
             asmtointRET(d)
     # Checking if it belongs to NOP (Opcode 0)         ############## REVIEW, I have done nothing with this NOP
     elif d.op == "orc":
-        if len(args) != 2:
+        if len(d.args) != 2:
             raise Exception('Incorrect Number of arguments')
         asmtointNOP(d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
     # Checking if it belongs to SHIFT (Opcode 37)
     # FIXME:
     elif d.op in ["shlr", "salr", "ror", "mul", "div", "mod", "divu", "modu", "shl", "shr", "sar",
                   "rol", "extr", "extru", "ext", "extu", "insz"]:
-        if len(args) != 4:
+        if len(d.args) != 4:
             raise Exception('Incorrect Number of arguments')
         asmtointSHIFT(d)
 
     # Checking if it belongs to ALU (Opcode 40)
-    elif  len(args) == 4 and  d.op in ["add", "nadd", "and", "cand", "or", "cor", "xor", "xnor", "eq", "ne", "lt",
+    elif  len(d.args) == 4 and  d.op in ["add", "nadd", "and", "cand", "or", "cor", "xor", "xnor", "eq", "ne", "lt",
                                        "ge", "ltu", "geu", "min", "max", "shl", "shr", "sar", "ror", "mul", "div",
                                        "mod", "divu", "modu", "adds", "nadds", "sub", "andc", "orc", "gt", "le", 
                                        "gtu", "leu"]:
         # FIXME: WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
-        if len(args) != 4 and d.op != "min" and d.op != "max":
+        if len(d.args) != 4 and d.op != "min" and d.op != "max":
             raise Exception('Incorrect Number of arguments')
         asmtointALU(d)
     # Section 5 Opcode 41
     elif d.op in opcodes.get('alu'):
-        if len(args) != 5 and len(args) != 4:
+        if len(d.args) != 5 and len(d.args) != 4:
             raise Exception("Incorrect Number of parameters passed")
-        if len(args) == 5:
+        if len(d.args) == 5:
             asmtoint5(d)
     else:
         print("Returning all zeroes since the instruction is not recognized")
@@ -902,9 +882,9 @@ def asmtoint(asm):
     # opcode 41
     # This is not elif statement because it shares instruction names with previous elif statements
     if d.op in opcodes.get('alu'):
-        if len(args) != 5 and len(args) != 4:
+        if len(d.args) != 5 and len(d.args) != 4:
             raise Exception("Incorrect Number of parameters passed")
-        if len(args) == 5:
+        if len(d.args) == 5:
             asmtoint5(d)
     return d
 
@@ -912,7 +892,7 @@ def asmtoint(asm):
 def asmtointALU(d):
     """
     Note that func and n both share the same variable func
-    :param args:
+    :param d.args:
     :return: (opcode, ra, rbi, func, x, rd)
     """
     d.opcode = 40
@@ -976,18 +956,19 @@ def decode(asm):
     string line to hex string
     """
     d = asmtoint(asm)
-    instruction = inttohex(d)
-    return instruction
+    print(asm + " -> " + str(d))
+    hex = inttohex(d)
+    return hex
 
 
-def reg(mnemonic: str):
+def reg(neumonic: str):
     """
-    given the mnemonic (example: $0, $zero, $r1, $v0, etc...)
-    :param mnemonic:
+    given the neumonic (example: $0, $zero, $r1, $v0, etc...)
+    :param neumonic:
     :return: register number
     """
 
-    # (key: mnemonic, value: registerNumber)
+    # (key: neumonic, value: registerNumber)
     registerAliasDict = {
         '$zero': 0b00000,
         '$at': 0b00001,
@@ -1023,8 +1004,8 @@ def reg(mnemonic: str):
         '$ra': 0b11111,
     }
 
-    if len(mnemonic) == 2:
-        return int(mnemonic[1:])
+    if len(neumonic) == 2:
+        return int(neumonic[1:])
     else:
-        if mnemonic in registerAliasDict:
-            return registerAliasDict.get(mnemonic, 0)
+        if neumonic in registerAliasDict:
+            return registerAliasDict.get(neumonic, 0)

@@ -210,9 +210,9 @@ class Instruction(Addressable):
                     pass  # do
                 elif self.func == 3:  # SD
                     pass  # do
-        elif opcode in Instruction.sections[4]:  # i need to distinguish between the duplicated instructions in here
-            ra    = self.ra                      # Also: remember the NOP
-            rb    = self.rb                      # '?' means a part i don't know how to do
+        elif opcode in Instruction.sections[4]:  # remember the NOP
+            ra    = self.ra                      # '?' means a part i don't know how to do (signed/unsigned and the rotate instr.)
+            rb    = self.rb                     
             n     = self.n
             x     = self.x
             imm   = self.imm
@@ -220,14 +220,14 @@ class Instruction(Addressable):
             imm_R = self.imm_R  #this is also p (same postion, same number of bits)
             func  = self.func
             
-            # FUNCTION FOR SIGIN EXTEND
+            # FUNCTION FOR SIGIN EXTEND (to be used whenever we need to extend the imm)
             # def sign_extend(value, bits):
             #    sign_bit = 1 << (bits - 1)
             #    return (value & (sign_bit - 1)) - (value & sign_bit)
             
             
             # for opcode 32 - 35
-            if opcode in {32, 33, 34, 45}:   # Rb is the destination here
+            if opcode in {32, 33, 34, 45}:   # Rb is the destination in this group of opcodes
                 if func == 0:       # ADD   [sign extend imm to 64 bits]
                     rb =  ra + imm
                 elif func == 1:     # NADD  [sign extend imm to 64 bits]
@@ -262,38 +262,38 @@ class Instruction(Addressable):
                     rb = max(ra,imm)
              
             
-            elif opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12 
-                if func == 0:       # ADD   [sign extend imm to 64 bits]
+            elif opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 MEANS JR R31; OP Rb = Ra, Imm12 
+                if func == 0:       # RETADD   [sign extend imm to 64 bits]
                     rb =  ra + imm
-                elif func == 1:     # NADD  [sign extend imm to 64 bits]
+                elif func == 1:     # RETNADD  [sign extend imm to 64 bits]
                     rb = -ra + imm
-                elif func == 2:     # AND   [sign extend imm to 64 bits]    
+                elif func == 2:     # RETAND   [sign extend imm to 64 bits]    
                     rb =  ra & imm
-                elif func == 3:     # CAND  [sign extend imm to 64 bits]
+                elif func == 3:     # RETCAND  [sign extend imm to 64 bits]
                     rb = ~ra & imm
-                elif func == 4:     # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra | imm
-                elif func == 5:     # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~ra | imm
-                elif func == 6:     # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra ^ imm
-                elif func == 7:     # SET   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = imm
-                elif func == 8:     # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                elif func == 4:     # RETOR    [sign extend imm to 64 bits & use 1 NOP]
+                    rb =  ra | imm 
+                elif func == 5:     # RETCOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ~ra | imm 
+                elif func == 6:     # RETXOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb =  ra ^ imm 
+                elif func == 7:     # RETSET   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = imm 
+                elif func == 8:     # RETEQ    [sign extend imm to 64 bits & use 1 NOP]
                     rb = (ra == imm) 
-                elif func == 9:     # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm) 
-                elif func == 10:    # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                elif func == 9:     # RETNE    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (ra != imm)  
+                elif func == 10:    # RETLT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rb = (ra < imm)  
+                elif func == 11:    # RETGE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rb = (ra > imm) 
+                elif func == 12:    # RETLTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
                     rb = (ra < imm) 
-                elif func == 11:    # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm)
-                elif func == 12:    # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra < imm)
-                elif func == 13:    # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra > imm)
-                elif func == 14:    # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra,imm)
-                elif func == 15:    # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                elif func == 13:    # RETGEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (ra > imm) 
+                elif func == 14:    # RETMIN   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = min(ra,imm) 
+                elif func == 15:    # RETMAX   [sign extend imm to 64 bits & use 2 NOP]
                     rb = max(ra,imm)
                 
                 
@@ -309,16 +309,16 @@ class Instruction(Addressable):
                     rb =  ra & imm
                 elif func == 3:      # ROR  [ not sure about how to rotate bitwise ] 
                     pass #do
-                elif func == 8:      # MUL  [ im not sure why there is a MUL in the SHIFT section, IT'S NOT EVEN EXPLAINED! ]
-                    pass #do 
-                elif func == 12:     # DIV  [ SAME ]
-                    pass #do 
-                elif func == 13:     # MOD  [ SAME ]
-                    pass #do 
-                elif func == 14:     # DIVU [ SAME ]
-                    pass #do 
-                elif func == 15:     # MODU [ SAME ]
-                    pass #do 
+                elif func == 8:      # MUL  [signed]?
+                    rb = ra  * imm
+                elif func == 12:     # DIV  [signed]?  
+                    rb = ra // imm
+                elif func == 13:     # MOD  [signed]? 
+                    rb = ra %  imm
+                elif func == 14:     # DIVU [unsigned]?
+                    rb = ra // imm   
+                elif func == 15:     # MODU [unsigned]?
+                    rb = ra %  imm
                 
                 
             # for opcode 40
@@ -361,7 +361,7 @@ class Instruction(Addressable):
                         rd = (rb<<ra)
                     elif func == 1:      # SHR
                         rd = (rb>>ra)
-                    elif func == 2:      # SAR [ Shift to the right arithmetic, meaning: SIGNED]? 
+                    elif func == 2:      # SAR [ Shift to the right arithmetic, meaning: shift right and then SIGN extend]? 
                         rd = (rb<<ra)
                     elif func == 3:      # ROR [ not sure how to rotate bitwise ]
                         pass  # do
@@ -375,9 +375,9 @@ class Instruction(Addressable):
                         rd = ra // rb    
                     elif func == 15:     # MODU [unsigned]?
                         rd = ra %  rb
-                elif x == 3:             # ADDS  Rd = Ra + Rb<<n
+                elif x == 3:             # ADDS   Rd = Ra + Rb<<n
                    rd =  ra + (rb<<n) 
-                elif x == 4:             # NADDS Rd = -Ra + Rb<<n           
+                elif x == 4:             # NADDS  Rd = -Ra + Rb<<n           
                    rd = -ra + (rb<<n)    
   
                    

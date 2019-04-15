@@ -855,12 +855,14 @@ def asmtoint(asm):
         asmtoint3(d)
     # Section 4
     # Checking if it belongs to ALUI (Opcode 32 - 35)
-    elif d.op in ["add", "and", "or", "xor", "nadd", "cand", ]:
+    elif len(args) == 5 and d.op in ["add", "and", "or", "xor", "nadd", "cand", "cor", "xnor", "sub", "andc", "orc", 
+                                     "eq", "ne", "lt", "ge", "ltu", "geu", "min", "max", "gt", "le", "gtu", "leu"]:
         if len(args) != 5:
             asmtointALUI(d)
 
     # Checking if it belongs to RET (Opcode 36)
-    elif d.op in ["cor", "xnor", "sub", "andc", ]:
+    elif d.op in ["retadd", "retnadd", "retand", "retcand", "retor", "retcor", "retxor", "retset", 
+                  "reteq", "retne", "retlt", "retge", "retltu", "retgeu", "retmin", "retmax"]:
         print(d.op)
         if (len(args) != 4) and d.op != "xnor" and d.op != "cor":  # XNOR is in section 5 and contains 5 arguments
             raise Exception('Incorrect Number of arguments')
@@ -870,16 +872,20 @@ def asmtoint(asm):
     elif d.op == "orc":
         if len(args) != 2:
             raise Exception('Incorrect Number of arguments')
-        asmtointNOP(d)  # FIXME: IDK what this is supposed to be
+        asmtointNOP(d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
     # Checking if it belongs to SHIFT (Opcode 37)
     # FIXME:
-    elif d.op in ["eq", "ne", "lt", "ge", "ltu", ]:
+    elif d.op in ["shlr", "salr", "ror", "mul", "div", "mod", "divu", "modu", "shl", "shr", "sar",
+                  "rol", "extr", "extru", "ext", "extu", "insz"]:
         if len(args) != 4:
             raise Exception('Incorrect Number of arguments')
         asmtointSHIFT(d)
 
     # Checking if it belongs to ALU (Opcode 40)
-    elif d.op in ["geu", "min", "max", "gt", "le", "gtu", "leu", "retadd", "retnadd", "retand", "retcand", ]:
+    elif  len(args) == 4 and  d.op in ["add", "nadd", "and", "cand", "or", "cor", "xor", "xnor", "eq", "ne", "lt",
+                                       "ge", "ltu", "geu", "min", "max", "shl", "shr", "sar", "ror", "mul", "div",
+                                       "mod", "divu", "modu", "adds", "nadds", "sub", "andc", "orc", "gt", "le", 
+                                       "gtu", "leu"]:
         # FIXME: WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
         if len(args) != 4 and d.op != "min" and d.op != "max":
             raise Exception('Incorrect Number of arguments')

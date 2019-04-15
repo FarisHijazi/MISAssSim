@@ -9,6 +9,7 @@ For registers, we keep the register mnemonic,
 
 class Addressable:
     __nextUnallocated__ = 0  # static field, keeps track of last available unallocated address
+    # __globalAddressTable__: dict  # stores every single `Addressable` object
 
 
     def __init__(self, size=1, startAddress=-1, lineStr='', enforceAlignment=True):
@@ -37,6 +38,18 @@ class Addressable:
         padding = (align - (offset % align)) % align
         return offset + padding
 
+    @staticmethod
+    # splits the line and removes unwanted symbols
+    def __splitLine__(line: str) -> list: # return args/args
+        import re
+        regex = re.compile(r"[,\s()=\[|\]]+")
+        args = [arg for arg in re.split(regex, line) if arg != ""]
+
+        for x in args:
+            if re.search(r'[^\w\d.\-]', x):
+                raise Exception('Invalid character encountered:', line)
+
+        return args
 
     def size(self) -> int:
         """ :return: size of addressable in bytes """
@@ -50,16 +63,36 @@ class DataBlock(Addressable):
 
 
 class Instruction(Addressable):
-    def __init__(self, lineStr, address):
+    def __init__(self, lineStr, address=-1):
         super(Instruction, self).__init__(size=1, startAddress=address, lineStr=lineStr)
-        self.mnemonics = lineStr.split()
         self.sim = sim  # the simulator instance
         self.type = self.getType()
 
-        # self.ra  # the string
-        # self.raInt  # the index of the
+        self.args = Instruction.__splitLine__(lineStr)
+        self.op = self.args[0]
+        self.rd: str
+        self.ra: str
+        self.rb: str
+        self.rc: str
+
+        # decode fields
         self.opcode: int
-        self.dest: str
+        self.func: int
+
+        self.rdi: int
+        self.rai: int
+        self.rbi: int
+        self.rci: int
+
+        self.imm: int = 0
+        self.p: int
+        self.x: int
+        self.s: int
+        self.n: int
+        self.imm_L: int
+        self.imm_R: int
+        self.offset: int
+
         self.operands: list  # list of operands
 
 
@@ -99,64 +132,63 @@ class Instruction(Addressable):
         elif opcode in Instruction.sections[3]:
             ra = self.ra
             rb = self.rb
-            func = self.func
             if opcode in {24, 25}:
                 imm = self.imm
                 if opcode == 24:
-                    if func == 0:  # LBU
+                    if self.func == 0:  # LBU
                         pass  # do
-                    elif func == 1:  # LHU
+                    elif self.func == 1:  # LHU
                         pass  # do
-                    elif func == 2:  # LWU
+                    elif self.func == 2:  # LWU
                         pass  # do
-                    elif func == 3:  # LDU
+                    elif self.func == 3:  # LDU
                         pass  # do
-                    elif func == 4:  # LB
+                    elif self.func == 4:  # LB
                         pass  # do
-                    elif func == 5:  # LH
+                    elif self.func == 5:  # LH
                         pass  # do
-                    elif func == 6:  # LW
+                    elif self.func == 6:  # LW
                         pass  # do
-                    elif func == 7:  # LD
+                    elif self.func == 7:  # LD
                         pass  # do
                 elif opcode == 25:
-                    if func == 0:  # SB
+                    if self.func == 0:  # SB
                         pass  # do
-                    elif func == 1:  # SH
+                    elif self.func == 1:  # SH
                         pass  # do
-                    elif func == 2:  # SW
+                    elif self.func == 2:  # SW
                         pass  # do
-                    elif func == 3:  # SD
+                    elif self.func == 3:  # SD
                         pass  # do
             elif opcode == 26:  # LoadX
                 s = self.s
                 rd = self.rd
-                if func == 0:  # LBU
+                if self.func == 0:  # LBU
                     pass  # do
-                elif func == 1:  # LHU
+                elif self.func == 1:  # LHU
                     pass  # do
-                elif func == 2:  # LWU
+                elif self.func == 2:  # LWU
                     pass  # do
-                elif func == 3:  # LDU
+                elif self.func == 3:  # LDU
                     pass  # do
-                elif func == 4:  # LB
+                elif self.func == 4:  # LB
                     pass  # do
-                elif func == 5:  # LH
+                elif self.func == 5:  # LH
                     pass  # do
-                elif func == 6:  # LW
+                elif self.func == 6:  # LW
                     pass  # do
-                elif func == 7:  # LD
+                elif self.func == 7:  # LD
                     pass  # do
             elif opcode == 27:
                 s = self.s
                 rc = self.rc
-                if func == 0:  # SB
+                if self.func == 0:  # SB
                     pass  # do
-                elif func == 1:  # SH
+                elif self.func == 1:  # SH
                     pass  # do
-                elif func == 2:  # SW
+                elif self.func == 2:  # SW
                     pass  # do
-                elif func == 3:  # SD
+                elif self.func == 3:  # SD
                     pass  # do
         elif opcode in Instruction.sections[4]:
             pass  # do
@@ -166,68 +198,66 @@ class Instruction(Addressable):
             rc = self.rc
             rd = self.rd
             x = self.x
-            func = self.func
-
             if x == 0:
-                if func == 0:
+                if self.func == 0:
                     pass  # do
-                elif func == 1:
+                elif self.func == 1:
                     pass  # do
-                elif func == 2:
+                elif self.func == 2:
                     pass  # do
-                elif func == 3:
+                elif self.func == 3:
                     pass  # do
-                elif func == 4:
+                elif self.func == 4:
                     pass  # do
-                elif func == 5:
+                elif self.func == 5:
                     pass  # do
-                elif func == 6:
+                elif self.func == 6:
                     pass  # do
-                elif func == 7:
+                elif self.func == 7:
                     pass  # do
             elif x == 1:
-                if func == 0:
+                if self.func == 0:
                     pass  # do
-                elif func == 1:
+                elif self.func == 1:
                     pass  # do
-                elif func == 2:
+                elif self.func == 2:
                     pass  # do
-                elif func == 3:
+                elif self.func == 3:
                     pass  # do
-                elif func == 4:
+                elif self.func == 4:
                     pass  # do
-                elif func == 5:
+                elif self.func == 5:
                     pass  # do
-                elif func == 6:
+                elif self.func == 6:
                     pass  # do
-                elif func == 7:
+                elif self.func == 7:
                     pass  # do
-                elif func == 8:
+                elif self.func == 8:
                     pass  # do
-                elif func == 9:
+                elif self.func == 9:
                     pass  # do
-                elif func == 10:
+                elif self.func == 10:
                     pass  # do
-                elif func == 11:
+                elif self.func == 11:
                     pass  # do
-                elif func == 12:
+                elif self.func == 12:
                     pass  # do
-                elif func == 13:
+                elif self.func == 13:
                     pass  # do
-                elif func == 14:
+                elif self.func == 14:
                     pass  # do
-                elif func == 15:
+                elif self.func == 15:
                     pass  # do
             elif x == 2:
-                if func == 0:
+                if self.func == 0:
                     pass  # do
-                elif func == 1:
+                elif self.func == 1:
                     pass  # do
-                elif func == 2:
+                elif self.func == 2:
                     pass  # do
-                elif func == 4:  # 3 is skipped according to doc
+                elif self.func == 4:  # 3 is skipped according to doc
                     pass  # do
-                elif func == 5:
+                elif self.func == 5:
                     pass  # do
         elif opcode in Instruction.sections[6]:
             pass  # do

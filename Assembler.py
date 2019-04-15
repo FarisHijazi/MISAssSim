@@ -186,7 +186,7 @@ fpu1_dict = {
     "rint.s": (0, 7),
     "rint.d": (1, 7),
 }
-# neumonic: (p, func, swap_ra_rb)
+# mnemonic: (p, func, swap_ra_rb)
 fpu2_dict = {
     "eq.s": (0, 0, False),
     "eq.d": (1, 0, False),
@@ -221,7 +221,7 @@ fpu2_dict = {
     "sub.s": (0, 9, True),
     "sub.d": (1, 9, True),
 }
-# neumonic: (p, func, swap_rc_rb)
+# mnemonic: (p, func, swap_rc_rb)
 fpu3_dict = {
     "add.s": (0, 8, False),
     "add": (1, 8, False),
@@ -260,7 +260,7 @@ fpu3_dict = {
     "orle.s": (0, 7, True),
     "orle.d": (1, 7, True),
 }
-# key: neumonic, value: (x, func)
+# key: mnemonic, value: (x, func)
 sec5_dict = {
     "add": (0, 0),
     "and": (0, 2),
@@ -974,14 +974,14 @@ def decode(asm):
     return instruction
 
 
-def reg(neumonic: str):
+def reg(mnemonic: str):
     """
-    given the neumonic (example: $0, $zero, $r1, $v0, etc...)
-    :param neumonic:
+    given the mnemonic (example: $0, $zero, $r1, $v0, etc...)
+    :param mnemonic:
     :return: register number
     """
 
-    # (key: neumonic, value: registerNumber)
+    # (key: mnemonic, value: registerNumber)
     registerAliasDict = {
         '$zero': 0b00000,
         '$at': 0b00001,
@@ -1017,8 +1017,8 @@ def reg(neumonic: str):
         '$ra': 0b11111,
     }
 
-    if len(neumonic) == 2:
-        return int(neumonic[1:])
+    if len(mnemonic) == 2:
+        return int(mnemonic[1:])
     else:
-        if neumonic in registerAliasDict:
-            return registerAliasDict.get(neumonic, 0)
+        if mnemonic in registerAliasDict:
+            return registerAliasDict.get(mnemonic, 0)

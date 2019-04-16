@@ -364,7 +364,7 @@ def asmtointsection2(d):
 
 # d.ra, d.rbi, rc, d.rd, s, d.func, d.imm =
 def asmtoint3(d):
-    #sec3.6
+    # sec3.6
     # d.opcodes, d.func = opcodes.get('ls').get(d.op)
     print(str(d.func))
 
@@ -384,7 +384,7 @@ def asmtoint3(d):
         d.ra = d.args[2]
         d.rd = d.args[1]
         d.s = int(d.args[4])
-    elif d.opcode == 27: # loadx
+    elif d.opcode == 27:  # loadx
         d.rb = d.args[2]
         d.ra = d.args[1]
         d.rc = d.args[4]
@@ -562,6 +562,7 @@ def asmtointFPU1(d):
     d.rai = reg(d.args[2])
     d.p, d.func = fpu1_dict[d.op]
 
+
 # d.opcode, d.ra, d.rbi, d.rd, d.func, d.p
 def asmtointFPU2(d):
     d.opcode = 43
@@ -715,7 +716,7 @@ def inttohex(d):
         rdstr = format(d.rdi, '05b')
         instruction = opstr + rastr + rbstr + funcstr + xstr + rcstr + rdstr
         # FPU instructions
-    elif d.opcode in {42,43,44}:
+    elif d.opcode in {42, 43, 44}:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
         fnstr = format(d.func, '05b')
@@ -754,6 +755,7 @@ def asmtoint(asm):
     if isinstance(asm, str):
         return decodeInstruction(Instruction(asm))
     return decodeInstruction(asm)
+
 
 def decodeInstruction(d: Instruction):
     # Section 6 FPU1
@@ -838,20 +840,20 @@ def decodeInstruction(d: Instruction):
     elif d.op in opcodes.get('ls'):
         d.opcode, d.func = opcodes.get('ls').get(d.op)
         # Check if it is R-Format (has 5 arguments)
-        if len(d.args) == 5: # convertng I to R type (P21) 
+        if len(d.args) == 5:  # convertng I to R type (P21)
             d.opcode += 2
         if len(d.args) != 5 and len(d.args) != 4:
             raise Exception('Incorrect Number of arguments : ' + str(len(d.args)))
         asmtoint3(d)
     # Section 4
     # Checking if it belongs to ALUI (Opcode 32 - 35)
-    elif len(d.args) == 5 and d.op in ["add", "and", "or", "xor", "nadd", "cand", "cor", "xnor", "sub", "andc", "orc", 
-                                     "eq", "ne", "lt", "ge", "ltu", "geu", "min", "max", "gt", "le", "gtu", "leu"]:
+    elif len(d.args) == 5 and d.op in ["add", "and", "or", "xor", "nadd", "cand", "cor", "xnor", "sub", "andc", "orc",
+                                       "eq", "ne", "lt", "ge", "ltu", "geu", "min", "max", "gt", "le", "gtu", "leu"]:
         if len(d.args) != 5:
             asmtointALUI(d)
 
     # Checking if it belongs to RET (Opcode 36)
-    elif d.op in ["retadd", "retnadd", "retand", "retcand", "retor", "retcor", "retxor", "retset", 
+    elif d.op in ["retadd", "retnadd", "retand", "retcand", "retor", "retcor", "retxor", "retset",
                   "reteq", "retne", "retlt", "retge", "retltu", "retgeu", "retmin", "retmax"]:
         print(d.op)
         if (len(d.args) != 4) and d.op != "xnor" and d.op != "cor":  # XNOR is in section 5 and contains 5 arguments
@@ -862,7 +864,8 @@ def decodeInstruction(d: Instruction):
     elif d.op == "orc":
         if len(d.args) != 2:
             raise Exception('Incorrect Number of arguments')
-        asmtointNOP(d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
+        asmtointNOP(
+            d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
     # Checking if it belongs to SHIFT (Opcode 37)
     # FIXME:
     elif d.op in ["shlr", "salr", "ror", "mul", "div", "mod", "divu", "modu", "shl", "shr", "sar",
@@ -872,9 +875,9 @@ def decodeInstruction(d: Instruction):
         asmtointSHIFT(d)
 
     # Checking if it belongs to ALU (Opcode 40)
-    elif  len(d.args) == 4 and  d.op in ["add", "nadd", "and", "cand", "or", "cor", "xor", "xnor", "eq", "ne", "lt",
+    elif len(d.args) == 4 and d.op in ["add", "nadd", "and", "cand", "or", "cor", "xor", "xnor", "eq", "ne", "lt",
                                        "ge", "ltu", "geu", "min", "max", "shl", "shr", "sar", "ror", "mul", "div",
-                                       "mod", "divu", "modu", "adds", "nadds", "sub", "andc", "orc", "gt", "le", 
+                                       "mod", "divu", "modu", "adds", "nadds", "sub", "andc", "orc", "gt", "le",
                                        "gtu", "leu"]:
         # FIXME: WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
         if len(d.args) != 4 and d.op != "min" and d.op != "max":
@@ -961,7 +964,7 @@ def asmtointALU(d):
     # return opcode, ra, d.rbi, func, x, rd
 
 
-def decode(asm):
+def decodeToHex(asm):
     """
     string line to hex string
     """

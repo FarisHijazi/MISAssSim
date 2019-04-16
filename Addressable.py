@@ -1,7 +1,6 @@
 import Assembler
 import re
 
-
 """
 Conventions:
 For registers, we keep the register mnemonic,
@@ -10,8 +9,9 @@ For registers, we keep the register mnemonic,
 
 class Addressable:
     __nextUnallocated__ = 0  # static field, keeps track of last available unallocated address
-    # __globalAddressTable__: dict  # stores every single `Addressable` object
 
+
+    # __globalAddressTable__: dict  # stores every single `Addressable` object
 
     def __init__(self, size=4, startAddress=-1, lineStr='', enforceAlignment=True):
         """
@@ -39,9 +39,10 @@ class Addressable:
         padding = (align - (offset % align)) % align
         return offset + padding
 
+
     @staticmethod
     # splits the line and removes unwanted symbols
-    def __splitLine__(line: str) -> list: # return args/args
+    def __splitLine__(line: str) -> list:  # return args/args
         import re
         regex = re.compile(r"[,\s()=\[|\]]+")
         args = [arg for arg in re.split(regex, line) if arg != ""]
@@ -51,6 +52,7 @@ class Addressable:
                 raise Exception('Invalid character encountered:', line)
 
         return args
+
 
     def size(self) -> int:
         """ :return: size of addressable in bytes """
@@ -66,11 +68,11 @@ class DataBlock(Addressable):
 class Instruction(Addressable):
     def __init__(self, lineStr, address=-1):
         super(Instruction, self).__init__(size=1, startAddress=address, lineStr=lineStr)
-        
+
         asmLine = lineStr.split('//')[0].strip()
 
         regex = re.compile(r"[,\s()=\[|\]]+")
-        
+
         args = [arg for arg in (re.split(regex, asmLine)) if arg != ""]
         for x in args:
             if re.search(r'[^\w\d.\-]', x):
@@ -82,50 +84,69 @@ class Instruction(Addressable):
 
         self.args = Instruction.__splitLine__(lineStr)
         self.op = self.args[0]
-        self.rd: str
-        self.ra: str
-        self.rb: str
-        self.rc: str
+        self.rd: str = None
+        self.ra: str = None
+        self.rb: str = None
+        self.rc: str = None
 
         # decode fields
-        self.opcode: int
-        self.func: int
+        self.opcode: int = None
+        self.func: int = None
 
-        self.rdi: int
-        self.rai: int
-        self.rbi: int
-        self.rci: int
+        self.rdi: int = None
+        self.rai: int = None
+        self.rbi: int = None
+        self.rci: int = None
 
         self.imm: int = 0
-        self.p: int
-        self.x: int
-        self.s: int
-        self.n: int
-        self.imm_L: int
-        self.imm_R: int
-        self.offset: int
-
-        self.operands: list  # list of operands
+        self.p: int = None
+        self.x: int = None
+        self.s: int = None
+        self.n: int = None
+        self.imm_L: int = None
+        self.imm_R: int = None
+        self.offset: int = None
 
         Assembler.decodeInstruction(self)
 
 
     # TODO: these should be moved to the Assembler
-    sections = {}
-    sections[3] = {
-        24,
-        25,
-        26,
-        27
-    }
-    sections[5] = {
-        41,
+    sections = {
+        2: {
+            2,
+            3,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+        },
+        3: {
+            24,
+            25,
+            26,
+            27
+        },
+        5: {
+            41,
+        }
     }
 
 
-    def asHex(self) -> str:
-        # TODO:
-        return Assembler.decode(self)
+    def hex(self) -> str:
+        # returns the hex string
+        return Assembler.decodeToHex(self)
 
 
     def getType(self) -> str:
@@ -134,15 +155,17 @@ class Instruction(Addressable):
 
     def getFormat(self) -> str:
         pass
-    
+
+
     def __str__(self):
-        s=""
+        s = ""
         attrs = ['opcode', 'ra', 'rb', 'rc', 'rd', 'func', 'imm', 'p', 'offset', 's', 'x', 'n', 'imm_L', 'imm_R']
         for attr in attrs:
-            s += ", "+attr + ": "
+            s += ", " + attr + ": "
             if hasattr(self, attr):
                 s += str(getattr(self, attr))
         return s
+
 
     def execute(self, sim):
         opcode = self.opcode
@@ -210,176 +233,175 @@ class Instruction(Addressable):
                 elif self.func == 3:  # SD
                     pass  # do
         elif opcode in Instruction.sections[4]:  # i need to distinguish between the duplicated instructions in here
-            ra    = self.ra                      # Also: remember the NOP
-            rb    = self.rb                      # '?' means a part i don't know how to do
-            n     = self.n
-            x     = self.x
-            imm   = self.imm
+            ra = self.ra  # Also: remember the NOP
+            rb = self.rb  # '?' means a part i don't know how to do
+            n = self.n
+            x = self.x
+            imm = self.imm
             imm_L = self.imm_L
-            imm_R = self.imm_R  #this is also p (same postion, same number of bits)
-            func  = self.func
-            
+            imm_R = self.imm_R  # this is also p (same postion, same number of bits)
+            func = self.func
+
             # FUNCTION FOR SIGIN EXTEND
             # def sign_extend(value, bits):
             #    sign_bit = 1 << (bits - 1)
             #    return (value & (sign_bit - 1)) - (value & sign_bit)
-            
-            
+
             # for opcode 32 - 35
-            if opcode in {32, 33, 34, 45}:   # Rb is the destination here
-                if func == 0:       # ADD   [sign extend imm to 64 bits]
-                    rb =  ra + imm
-                elif func == 1:     # NADD  [sign extend imm to 64 bits]
+            if opcode in {32, 33, 34, 45}:  # Rb is the destination here
+                if func == 0:  # ADD   [sign extend imm to 64 bits]
+                    rb = ra + imm
+                elif func == 1:  # NADD  [sign extend imm to 64 bits]
                     rb = -ra + imm
-                elif func == 2:     # AND   [sign extend imm to 64 bits]    
-                    rb =  ra & imm
-                elif func == 3:     # CAND  [sign extend imm to 64 bits]
+                elif func == 2:  # AND   [sign extend imm to 64 bits]
+                    rb = ra & imm
+                elif func == 3:  # CAND  [sign extend imm to 64 bits]
                     rb = ~ra & imm
-                elif func == 4:     # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra | imm
-                elif func == 5:     # COR   [sign extend imm to 64 bits & use 1 NOP]
+                elif func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ra | imm
+                elif func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
                     rb = ~ra | imm
-                elif func == 6:     # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra ^ imm
-                elif func == 7:     # SET   [sign extend imm to 64 bits & use 1 NOP]
+                elif func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ra ^ imm
+                elif func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
                     rb = imm
-                elif func == 8:     # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra == imm) 
-                elif func == 9:     # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm) 
-                elif func == 10:    # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra < imm) 
-                elif func == 11:    # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm)
-                elif func == 12:    # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                elif func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (ra == imm)
+                elif func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (ra != imm)
+                elif func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
                     rb = (ra < imm)
-                elif func == 13:    # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                elif func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
                     rb = (ra > imm)
-                elif func == 14:    # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra,imm)
-                elif func == 15:    # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(ra,imm)
-             
-            
+                elif func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (ra < imm)
+                elif func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (ra > imm)
+                elif func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = min(ra, imm)
+                elif func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = max(ra, imm)
+
+
             elif opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12 
-                if func == 0:       # ADD   [sign extend imm to 64 bits]
-                    rb =  ra + imm
-                elif func == 1:     # NADD  [sign extend imm to 64 bits]
+                if func == 0:  # ADD   [sign extend imm to 64 bits]
+                    rb = ra + imm
+                elif func == 1:  # NADD  [sign extend imm to 64 bits]
                     rb = -ra + imm
-                elif func == 2:     # AND   [sign extend imm to 64 bits]    
-                    rb =  ra & imm
-                elif func == 3:     # CAND  [sign extend imm to 64 bits]
+                elif func == 2:  # AND   [sign extend imm to 64 bits]
+                    rb = ra & imm
+                elif func == 3:  # CAND  [sign extend imm to 64 bits]
                     rb = ~ra & imm
-                elif func == 4:     # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra | imm
-                elif func == 5:     # COR   [sign extend imm to 64 bits & use 1 NOP]
+                elif func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ra | imm
+                elif func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
                     rb = ~ra | imm
-                elif func == 6:     # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb =  ra ^ imm
-                elif func == 7:     # SET   [sign extend imm to 64 bits & use 1 NOP]
+                elif func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ra ^ imm
+                elif func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
                     rb = imm
-                elif func == 8:     # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra == imm) 
-                elif func == 9:     # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm) 
-                elif func == 10:    # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra < imm) 
-                elif func == 11:    # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm)
-                elif func == 12:    # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                elif func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (ra == imm)
+                elif func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (ra != imm)
+                elif func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
                     rb = (ra < imm)
-                elif func == 13:    # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                elif func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
                     rb = (ra > imm)
-                elif func == 14:    # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra,imm)
-                elif func == 15:    # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(ra,imm)
-                
-                
-                
-                
+                elif func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (ra < imm)
+                elif func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (ra > imm)
+                elif func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = min(ra, imm)
+                elif func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = max(ra, imm)
+
+
+
+
             # for Opcode 37 SHIFT
-            elif opcode == 37:  
-                if func == 0:        # SHLR   
-                    rb = ((ra<<imm_L)>>imm_R)
-                elif func == 1:      # SHLR  
-                    rb = ((ra<<imm_L)>>imm_R)
-                elif func == 2:      # SALR      
-                    rb =  ra & imm
-                elif func == 3:      # ROR  [ not sure about how to rotate bitwise ] 
-                    pass #do
-                elif func == 8:      # MUL  [ im not sure why there is a MUL in the SHIFT section, IT'S NOT EVEN EXPLAINED! ]
-                    pass #do 
-                elif func == 12:     # DIV  [ SAME ]
-                    pass #do 
-                elif func == 13:     # MOD  [ SAME ]
-                    pass #do 
-                elif func == 14:     # DIVU [ SAME ]
-                    pass #do 
-                elif func == 15:     # MODU [ SAME ]
-                    pass #do 
-                
-                
+            elif opcode == 37:
+                if func == 0:  # SHLR
+                    rb = ((ra << imm_L) >> imm_R)
+                elif func == 1:  # SHLR
+                    rb = ((ra << imm_L) >> imm_R)
+                elif func == 2:  # SALR
+                    rb = ra & imm
+                elif func == 3:  # ROR  [ not sure about how to rotate bitwise ]
+                    pass  # do
+                elif func == 8:  # MUL  [ im not sure why there is a MUL in the SHIFT section, IT'S NOT EVEN EXPLAINED! ]
+                    pass  # do
+                elif func == 12:  # DIV  [ SAME ]
+                    pass  # do
+                elif func == 13:  # MOD  [ SAME ]
+                    pass  # do
+                elif func == 14:  # DIVU [ SAME ]
+                    pass  # do
+                elif func == 15:  # MODU [ SAME ]
+                    pass  # do
+
+
             # for opcode 40
             elif opcode == 40:
                 if x == 0:
-                    if func == 0:        # ADD
-                        rd =  ra + rb
-                    elif func == 1:      # NADD
+                    if func == 0:  # ADD
+                        rd = ra + rb
+                    elif func == 1:  # NADD
                         rd = -ra + rb
-                    elif func == 2:      # AND
-                        rd =  ra & rb    
-                    elif func == 3:      # CAND
-                        rd = ~ra & rb 
-                    elif func == 4:      # OR
-                        rd =  ra | rb 
-                    elif func == 5:      # COR
+                    elif func == 2:  # AND
+                        rd = ra & rb
+                    elif func == 3:  # CAND
+                        rd = ~ra & rb
+                    elif func == 4:  # OR
+                        rd = ra | rb
+                    elif func == 5:  # COR
                         rd = ~ra | rb
-                    elif func == 6:      # XOR
-                        rd =  ra ^ rb
-                    elif func == 7:      # XNOR
+                    elif func == 6:  # XOR
+                        rd = ra ^ rb
+                    elif func == 7:  # XNOR
                         rd = ~ra ^ rb
-                    elif func == 8:      # EQ
+                    elif func == 8:  # EQ
                         rd = (ra == rb)
-                    elif func == 9:      # NE
+                    elif func == 9:  # NE
                         rd = (ra != rb)
-                    elif func == 10:     # LT  [signed]?
+                    elif func == 10:  # LT  [signed]?
                         rd = (ra < rb)
-                    elif func == 11:     # GT  [signed]?
+                    elif func == 11:  # GT  [signed]?
                         rd = (ra > rb)
-                    elif func == 12:     # LTU [unsigned]?
+                    elif func == 12:  # LTU [unsigned]?
                         rd = (ra < rb)
-                    elif func == 13:     # GTU [unsigned]?
+                    elif func == 13:  # GTU [unsigned]?
                         pass  # do
-                    elif func == 14:     # MIN
-                        rd = min(ra,rb)   
-                    elif func == 15:     # MAX
-                        rd = max(ra,rb)    
-                elif x == 2: 
-                    if func == 0:        # SHL
-                        rd = (rb<<ra)
-                    elif func == 1:      # SHR
-                        rd = (rb>>ra)
-                    elif func == 2:      # SAR [ Shift to the right arithmetic, meaning: SIGNED]? 
-                        rd = (rb<<ra)
-                    elif func == 3:      # ROR [ not sure how to rotate bitwise ]
+                    elif func == 14:  # MIN
+                        rd = min(ra, rb)
+                    elif func == 15:  # MAX
+                        rd = max(ra, rb)
+                elif x == 2:
+                    if func == 0:  # SHL
+                        rd = (rb << ra)
+                    elif func == 1:  # SHR
+                        rd = (rb >> ra)
+                    elif func == 2:  # SAR [ Shift to the right arithmetic, meaning: SIGNED]?
+                        rd = (rb << ra)
+                    elif func == 3:  # ROR [ not sure how to rotate bitwise ]
                         pass  # do
-                    elif func == 8:      # MUL [signed]?     
-                        rd = ra *  rb
-                    elif func == 12:     # DIV [signed]?  
+                    elif func == 8:  # MUL [signed]?
+                        rd = ra * rb
+                    elif func == 12:  # DIV [signed]?
                         rd = ra // rb
-                    elif func == 13:     # MOD [signed]? 
-                        rd = ra %  rb
-                    elif func == 14:     # DIVU [unsigned]?
-                        rd = ra // rb    
-                    elif func == 15:     # MODU [unsigned]?
-                        rd = ra %  rb
-                elif x == 3:             # ADDS  Rd = Ra + Rb<<n
-                   rd =  ra + (rb<<n) 
-                elif x == 4:             # NADDS Rd = -Ra + Rb<<n           
-                   rd = -ra + (rb<<n)    
-  
-                   
+                    elif func == 13:  # MOD [signed]?
+                        rd = ra % rb
+                    elif func == 14:  # DIVU [unsigned]?
+                        rd = ra // rb
+                    elif func == 15:  # MODU [unsigned]?
+                        rd = ra % rb
+                elif x == 3:  # ADDS  Rd = Ra + Rb<<n
+                    rd = ra + (rb << n)
+                elif x == 4:  # NADDS Rd = -Ra + Rb<<n
+                    rd = -ra + (rb << n)
+
+
         elif opcode in Instruction.sections[5]:
             ra = self.ra
             rb = self.rb
@@ -388,7 +410,7 @@ class Instruction(Addressable):
             x = self.x
             if x == 0:
                 if self.func == 0:
-                    sim.regfile[rd] = sim.regfile[ra] + sim.regfile[rb] + sim.regfile[rb] 
+                    sim.regfile[rd] = sim.regfile[ra] + sim.regfile[rb] + sim.regfile[rb]
                 elif self.func == 1:
                     pass  # do
                 elif self.func == 2:

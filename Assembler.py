@@ -783,7 +783,6 @@ def decodeInstruction(d: Instruction):
                 'Incorrect Number of arguments : ' + str(len(d.args)))
         asmtointFPU3(d)
 
-
     # SECTION 2 branches
     elif d.op in opcodes.get('b'):
         if len(d.args) != 4:

@@ -21,7 +21,7 @@ class Simulator:
     def __init__(self, assembledFile=None):
         self.regfile = Simulator.Regfile("gp")
         self.mem = Simulator.Mem()
-        self.currentInst = 0
+        self.pc = 0  # the Prorgam Counter
         self.assembledFile = assembledFile
         Simulator.sim = self
 
@@ -35,50 +35,61 @@ class Simulator:
     def step(self):
         if self.assembledFile is None:
             raise Exception("no assembled file, must compile")
-        pass
+
+        if self.pc >= len(self.assembledFile.directiveSegments.get('.text')):
+            print("reached end of .text segment")
+            return
+        next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
+        self.executeInstruction(next_instruction)
+        self.pc += 1
 
 
     def runAll(self):
         if self.assembledFile is None:
             raise Exception("no assembled file, must compile")
-            pass
+        while self.pc < len(self.assembledFile.directiveSegments.get('.text')):
+            self.step()
 
     class Regfile:
         # (width in bits)
+
+        # format of the reg file: (value, name, representation)
+        # representation will be one of: ('fp', 'int', 'hex', 'bin', 'dec')
         initializer = {
-            "gp": 32,
-            "e": 64,
-            "c": 64,
-            "fp": 64
+            "gp": (32, ['r{}'.format(i) for i in range(32)], ['int'] * 32),
+            "e": (64, ['e{}'.format(i) for i in range(64)], ['int'] * 64),
+            "c": (64, ['c{}'.format(i) for i in range(64)], ['int'] * 64),
+            "fp": (64, ['f{}'.format(i) for i in range(64)], ['fp'] * 64)
         }
 
 
-        def __init__(self, someString):
+        def __init__(self, initStr: str):
+            """ :param initStr: decides the type of regfile to make. either one of: "gp", "e", "c", "fp" """
             # if someString in initializer:
-            self.regfile = [0] * 32
+            length, names, representations = Simulator.Regfile.initializer.get(initStr)
+
+            self.names = names
+            self.regfile = [0] * length
+            self.representations = representations
+
+            print("regfile:", self.regfile)
 
 
-        def set(self, index, newVal):
+        def set(self, index, newVal, instruction: Instruction = None):
+            if type(index) is str:  # this line allows for indexing by reg names (as strings)
+                index = self.names.index(index)
+
+            print("setting reg {}: {} -> {}".format(index, self.regfile[index], newVal))
             self.regfile[index] = newVal
 
 
-        def get(self, x):
-            return self.regfile[x]
+        def get(self, regIndex: int):
+            return self.regfile[regIndex]
 
     class Mem:
-        # def __init__(se)
-
         def __init__(self):
             self.theBytes = [0] * 256
 
-
-        # self.regfile = {
-        #     'gp':gprf,
-        #     'fp':regFile
-        # }
-        #  = Regfile(names={}, regwidth=32)
-        # self.mem
-        pass
 
     def executeInstruction(self, instruction: Instruction):
         instruction.execute(self)

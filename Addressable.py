@@ -172,8 +172,8 @@ class Instruction(Addressable):
         if opcode in Instruction.sections[2]:
             pass  # do
         elif opcode in Instruction.sections[3]:
-            ra = self.ra
-            rb = self.rb
+            rai = self.ra
+            rbi = self.rb
             if opcode in {24, 25}:
                 imm = self.imm
                 if opcode == 24:
@@ -233,14 +233,10 @@ class Instruction(Addressable):
                 elif self.func == 3:  # SD
                     pass  # do
         elif opcode in Instruction.sections[4]:  # i need to distinguish between the duplicated instructions in here
-            ra = self.ra  # Also: remember the NOP
-            rb = self.rb  # '?' means a part i don't know how to do
-            n = self.n
-            x = self.x
+            rai = self.ra  # Also: remember the NOP
+            rbi = self.rb  # '?' means a part i don't know how to do
             imm = self.imm
-            imm_L = self.imm_L
-            imm_R = self.imm_R  # this is also p (same postion, same number of bits)
-            func = self.func
+            # this is also p (same postion, same number of bits)
 
             # FUNCTION FOR SIGIN EXTEND
             # def sign_extend(value, bits):
@@ -249,168 +245,167 @@ class Instruction(Addressable):
 
             # for opcode 32 - 35
             if opcode in {32, 33, 34, 45}:  # Rb is the destination here
-                if func == 0:  # ADD   [sign extend imm to 64 bits]
-                    rb = ra + imm
-                elif func == 1:  # NADD  [sign extend imm to 64 bits]
-                    rb = -ra + imm
-                elif func == 2:  # AND   [sign extend imm to 64 bits]
-                    rb = ra & imm
-                elif func == 3:  # CAND  [sign extend imm to 64 bits]
-                    rb = ~ra & imm
-                elif func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra | imm
-                elif func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~ra | imm
-                elif func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra ^ imm
-                elif func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = imm
-                elif func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra == imm)
-                elif func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm)
-                elif func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra < imm)
-                elif func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm)
-                elif func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra < imm)
-                elif func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra > imm)
-                elif func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra, imm)
-                elif func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(ra, imm)
-
+                if self.func == 0:  # ADD   [sign extend imm to 64 bits]
+                    rbi = rai + imm
+                elif self.func == 1:  # NADD  [sign extend imm to 64 bits]
+                    rbi = -rai + imm
+                elif self.func == 2:  # AND   [sign extend imm to 64 bits]
+                    rbi = rai & imm
+                elif self.func == 3:  # CAND  [sign extend imm to 64 bits]
+                    rbi = ~rai & imm
+                elif self.func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = rai | imm
+                elif self.func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = ~rai | imm
+                elif self.func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = rai ^ imm
+                elif self.func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = imm
+                elif self.func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = (rai == imm)
+                elif self.func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = (rai != imm)
+                elif self.func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rbi = (rai < imm)
+                elif self.func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rbi = (rai > imm)
+                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rbi = (rai < imm)
+                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rbi = (rai > imm)
+                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    rbi = min(rai, imm)
+                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    rbi = max(rai, imm)
 
             elif opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12 
-                if func == 0:  # ADD   [sign extend imm to 64 bits]
-                    rb = ra + imm
-                elif func == 1:  # NADD  [sign extend imm to 64 bits]
-                    rb = -ra + imm
-                elif func == 2:  # AND   [sign extend imm to 64 bits]
-                    rb = ra & imm
-                elif func == 3:  # CAND  [sign extend imm to 64 bits]
-                    rb = ~ra & imm
-                elif func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra | imm
-                elif func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~ra | imm
-                elif func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra ^ imm
-                elif func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = imm
-                elif func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra == imm)
-                elif func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm)
-                elif func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra < imm)
-                elif func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm)
-                elif func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra < imm)
-                elif func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra > imm)
-                elif func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra, imm)
-                elif func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(ra, imm)
+                if self.func == 0:  # ADD   [sign extend imm to 64 bits]
+                    rbi = rai + imm
+                elif self.func == 1:  # NADD  [sign extend imm to 64 bits]
+                    rbi = -rai + imm
+                elif self.func == 2:  # AND   [sign extend imm to 64 bits]
+                    rbi = rai & imm
+                elif self.func == 3:  # CAND  [sign extend imm to 64 bits]
+                    rbi = ~rai & imm
+                elif self.func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = rai | imm
+                elif self.func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = ~rai | imm
+                elif self.func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = rai ^ imm
+                elif self.func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = imm
+                elif self.func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = (rai == imm)
+                elif self.func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
+                    rbi = (rai != imm)
+                elif self.func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rbi = (rai < imm)
+                elif self.func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rbi = (rai > imm)
+                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rbi = (rai < imm)
+                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rbi = (rai > imm)
+                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    rbi = min(rai, imm)
+                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    rbi = max(rai, imm)
 
 
 
 
             # for Opcode 37 SHIFT
             elif opcode == 37:
-                if func == 0:  # SHLR
-                    rb = ((ra << imm_L) >> imm_R)
-                elif func == 1:  # SHLR
-                    rb = ((ra << imm_L) >> imm_R)
-                elif func == 2:  # SALR
-                    rb = ra & imm
-                elif func == 3:  # ROR  [ not sure about how to rotate bitwise ]
+                if self.func == 0:  # SHLR
+                    rbi = ((rai << self.imm_L) >> self.imm_R)
+                elif self.func == 1:  # SHLR
+                    rbi = ((rai << self.imm_L) >> self.imm_R)
+                elif self.func == 2:  # SALR
+                    rbi = rai & imm
+                elif self.func == 3:  # ROR  [ not sure about how to rotate bitwise ]
                     pass  # do
-                elif func == 8:  # MUL  [ im not sure why there is a MUL in the SHIFT section, IT'S NOT EVEN EXPLAINED! ]
+                elif self.func == 8:  # MUL  [ im not sure why there is a MUL in the SHIFT section, IT'S NOT EVEN EXPLAINED! ]
                     pass  # do
-                elif func == 12:  # DIV  [ SAME ]
+                elif self.func == 12:  # DIV  [ SAME ]
                     pass  # do
-                elif func == 13:  # MOD  [ SAME ]
+                elif self.func == 13:  # MOD  [ SAME ]
                     pass  # do
-                elif func == 14:  # DIVU [ SAME ]
+                elif self.func == 14:  # DIVU [ SAME ]
                     pass  # do
-                elif func == 15:  # MODU [ SAME ]
+                elif self.func == 15:  # MODU [ SAME ]
                     pass  # do
 
 
             # for opcode 40
             elif opcode == 40:
-                if x == 0:
-                    if func == 0:  # ADD
-                        rd = ra + rb
-                    elif func == 1:  # NADD
-                        rd = -ra + rb
-                    elif func == 2:  # AND
-                        rd = ra & rb
-                    elif func == 3:  # CAND
-                        rd = ~ra & rb
-                    elif func == 4:  # OR
-                        rd = ra | rb
-                    elif func == 5:  # COR
-                        rd = ~ra | rb
-                    elif func == 6:  # XOR
-                        rd = ra ^ rb
-                    elif func == 7:  # XNOR
-                        rd = ~ra ^ rb
-                    elif func == 8:  # EQ
-                        rd = (ra == rb)
-                    elif func == 9:  # NE
-                        rd = (ra != rb)
-                    elif func == 10:  # LT  [signed]?
-                        rd = (ra < rb)
-                    elif func == 11:  # GT  [signed]?
-                        rd = (ra > rb)
-                    elif func == 12:  # LTU [unsigned]?
-                        rd = (ra < rb)
-                    elif func == 13:  # GTU [unsigned]?
+                if self.x == 0:
+                    if self.func == 0:  # ADD
+                        rd = rai + rbi
+                    elif self.func == 1:  # NADD
+                        rd = -rai + rbi
+                    elif self.func == 2:  # AND
+                        rd = rai & rbi
+                    elif self.func == 3:  # CAND
+                        rd = ~rai & rbi
+                    elif self.func == 4:  # OR
+                        rd = rai | rbi
+                    elif self.func == 5:  # COR
+                        rd = ~rai | rbi
+                    elif self.func == 6:  # XOR
+                        rd = rai ^ rbi
+                    elif self.func == 7:  # XNOR
+                        rd = ~rai ^ rbi
+                    elif self.func == 8:  # EQ
+                        rd = (rai == rbi)
+                    elif self.func == 9:  # NE
+                        rd = (rai != rbi)
+                    elif self.func == 10:  # LT  [signed]?
+                        rd = (rai < rbi)
+                    elif self.func == 11:  # GT  [signed]?
+                        rd = (rai > rbi)
+                    elif self.func == 12:  # LTU [unsigned]?
+                        rd = (rai < rbi)
+                    elif self.func == 13:  # GTU [unsigned]?
                         pass  # do
-                    elif func == 14:  # MIN
-                        rd = min(ra, rb)
-                    elif func == 15:  # MAX
-                        rd = max(ra, rb)
-                elif x == 2:
-                    if func == 0:  # SHL
-                        rd = (rb << ra)
-                    elif func == 1:  # SHR
-                        rd = (rb >> ra)
-                    elif func == 2:  # SAR [ Shift to the right arithmetic, meaning: SIGNED]?
-                        rd = (rb << ra)
-                    elif func == 3:  # ROR [ not sure how to rotate bitwise ]
+                    elif self.func == 14:  # MIN
+                        rd = min(rai, rbi)
+                    elif self.func == 15:  # MAX
+                        rd = max(rai, rbi)
+                elif self.x == 2:
+                    if self.func == 0:  # SHL
+                        rd = (rbi << rai)
+                    elif self.func == 1:  # SHR
+                        rd = (rbi >> rai)
+                    elif self.func == 2:  # SAR [ Shift to the right arithmetic, meaning: SIGNED]?
+                        rd = (rbi << rai)
+                    elif self.func == 3:  # ROR [ not sure how to rotate bitwise ]
                         pass  # do
-                    elif func == 8:  # MUL [signed]?
-                        rd = ra * rb
-                    elif func == 12:  # DIV [signed]?
-                        rd = ra // rb
-                    elif func == 13:  # MOD [signed]?
-                        rd = ra % rb
-                    elif func == 14:  # DIVU [unsigned]?
-                        rd = ra // rb
-                    elif func == 15:  # MODU [unsigned]?
-                        rd = ra % rb
-                elif x == 3:  # ADDS  Rd = Ra + Rb<<n
-                    rd = ra + (rb << n)
-                elif x == 4:  # NADDS Rd = -Ra + Rb<<n
-                    rd = -ra + (rb << n)
+                    elif self.func == 8:  # MUL [signed]?
+                        rd = rai * rbi
+                    elif self.func == 12:  # DIV [signed]?
+                        rd = rai // rbi
+                    elif self.func == 13:  # MOD [signed]?
+                        rd = rai % rbi
+                    elif self.func == 14:  # DIVU [unsigned]?
+                        rd = rai // rbi
+                    elif self.func == 15:  # MODU [unsigned]?
+                        rd = rai % rbi
+                elif self.x == 3:  # ADDS  Rd = Ra + Rb<<n
+                    rd = rai + (rbi << self.n)
+                elif self.x == 4:  # NADDS Rd = -Ra + Rb<<n
+                    rd = -rai + (rbi << self.n)
 
 
         elif opcode in Instruction.sections[5]:
-            ra = self.ra
-            rb = self.rb
+            rai = self.ra
+            rbi = self.rb
             rc = self.rc
             rd = self.rd
             x = self.x
             if x == 0:
                 if self.func == 0:
-                    sim.regfile[rd] = sim.regfile[ra] + sim.regfile[rb] + sim.regfile[rb]
+                    sim.regfile[rd] = sim.regfile[rai] + sim.regfile[rbi] + sim.regfile[rbi]
                 elif self.func == 1:
                     pass  # do
                 elif self.func == 2:

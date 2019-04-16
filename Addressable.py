@@ -1,4 +1,3 @@
-import Assembler
 import re
 
 """
@@ -9,7 +8,6 @@ For registers, we keep the register mnemonic,
 
 class Addressable:
     __nextUnallocated__ = 0  # static field, keeps track of last available unallocated address
-
 
     # __globalAddressTable__: dict  # stores every single `Addressable` object
 
@@ -107,7 +105,8 @@ class Instruction(Addressable):
         self.imm_R: int = None
         self.offset: int = None
 
-        Assembler.decodeInstruction(self)
+        from Assembler import decodeInstruction
+        decodeInstruction(self)
 
 
     # TODO: these should be moved to the Assembler
@@ -146,7 +145,8 @@ class Instruction(Addressable):
 
     def hex(self) -> str:
         # returns the hex string
-        return Assembler.decodeToHex(self)
+        from Assembler import decodeToHex
+        return decodeToHex(self)
 
 
     def getType(self) -> str:

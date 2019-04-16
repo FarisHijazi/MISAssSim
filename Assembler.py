@@ -4,7 +4,7 @@ Conventions to agree on:
 """
 
 from tkinter import *
-from Addressable import *
+from Addressable import Instruction
 from AssembledFile import AssembledFile
 import re
 
@@ -752,6 +752,7 @@ def asmtointNOP(d):
 
 
 def asmtoint(asm):
+    from Addressable import Instruction
     if isinstance(asm, str):
         return decodeInstruction(Instruction(asm))
     return decodeInstruction(asm)

@@ -286,9 +286,14 @@ sim = Simulator()
 if file and os.path.isfile(file):
     file = open(file)
     _assembledFile = compileASM(file.read())
+
     sim.init(_assembledFile)
+    if cmd_args.r and _assembledFile:
+        sim.init(_assembledFile)
+        sim.step()
 elif cmd_args.asm:
     _assembledFile = compileASM(cmd_args.asm)
+
     if cmd_args.r and _assembledFile:
         sim.init(_assembledFile)
         sim.step()

@@ -18,11 +18,12 @@ from appjar import gui
 
 
 class Simulator:
-    def __init__(self, assembledFile=None):
+    def __init__(self, assembledFile=None, gui=None):
         self.regfile = Simulator.Regfile("gp")
         self.mem = Simulator.Mem()
         self.pc = 0  # the Prorgam Counter
         self.assembledFile = assembledFile
+        self.gui = gui
         Simulator.sim = self
 
 
@@ -42,13 +43,43 @@ class Simulator:
         next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
         self.executeInstruction(next_instruction)
         self.pc += 1
-
+        self.redisplayReg()
+        self.redisplayMem()
 
     def runAll(self):
         if self.assembledFile is None:
-            raise Exception("no assembled file, must compile")
-        while self.pc < len(self.assembledFile.directiveSegments.get('.text')):
-            self.step()
+            raise Exception("no assembled file, must compile")        
+        else :
+            for x in self.assembledFile.directiveSegments.get('.text',[]):
+                instr = instr = self.assembledFile.directiveSegments.get('.text', [])[self.currentInst]
+                self.executeInstruction(instr)
+                print("Step(), instr: " + str(instr) + "\nRegFile: " + str(self.regfile.__regs__))
+                self.currentInst += 1
+            self.redisplayReg()
+            self.redisplayMem()  
+    def redisplayReg(self):
+        if self.gui is None:
+            raise Exception("No gui object")
+        self.gui.setLabel("Registers", "R0 = " + str(self.regfile.get(0)) + "     \nR1 = " + str(self.regfile.get(1)) + "   \nR2 = " + str(self.regfile.get(2))+ 
+                            "\nR3 = " + str(self.regfile.get(3)) + " \nR4 = " + str(self.regfile.get(4)) + "      \nR5 = " + str(self.regfile.get(5))+
+                            "\nR6 = " + str(self.regfile.get(6)) + " \nR7 = " + str(self.regfile.get(7)) + "      \nR8 = " + str(self.regfile.get(8))+
+                            "\nR9 = " + str(self.regfile.get(9)) + " \nR10 = " + str(self.regfile.get(10)))
+        self.gui.setLabel("Registers1", "R11 = " + str(self.regfile.get(11)) + "     \nR12 = " + str(self.regfile.get(12)) + "   \nR13 = " + str(self.regfile.get(13))+ 
+                            "\nR14 = " + str(self.regfile.get(14)) + " \nR15 = " + str(self.regfile.get(15)) + "      \nR16 = " + str(self.regfile.get(16))+
+                            "\nR17 = " + str(self.regfile.get(17)) + " \nR18 = " + str(self.regfile.get(18)) + "      \nR19 = " + str(self.regfile.get(19))+
+                            "\nR18 = " + str(self.regfile.get(20)) + " \nR21 = " + str(self.regfile.get(21)))
+        self.gui.setLabel("Registers2", "R22 = " + str(self.regfile.get(22)) + "     \nR23 = " + str(self.regfile.get(23)) + "   \nR24 = " + str(self.regfile.get(24))+ 
+                            "\nR25 = " + str(self.regfile.get(25)) + " \nR26 = " + str(self.regfile.get(26)) + "      \nR27 = " + str(self.regfile.get(17))+
+                            "\nR28 = " + str(self.regfile.get(28)) + " \nR29 = " + str(self.regfile.get(29)) + "      \nR30 = " + str(self.regfile.get(30))+ "\nR31 = " + str(sim.regfile.get(31)))
+    def redisplayMem(self):
+        #This is a naaive way it can be optimized, no time
+        self.gui.openScrollPane("memPane")
+        index = 0
+        for x in sim.mem.theBytes:
+            name = str(index) + "c1"
+            self.gui.setLabel(name, sim.mem.theBytes[index])
+            index +=1
+        self.gui.stopScrollPane()
 
     class Regfile:
         # (width in bits)
@@ -88,7 +119,7 @@ class Simulator:
 
     class Mem:
         def __init__(self):
-            self.theBytes = [0] * 256
+           self.theBytes = ["00000000"]*256
 
 
     def executeInstruction(self, instruction: Instruction):
@@ -144,6 +175,18 @@ def compileASM(asm_text):
 
 
 def makeGUI():
+    def redisplayReg():
+        app.setLabel("Registers", "R0 = " + str(sim.regfile.get(0)) + "     \nR1 = " + str(sim.regfile.get(1)) + "   \nR2 = " + str(sim.regfile.get(2))+ 
+                            "\nR3 = " + str(sim.regfile.get(3)) + " \nR4 = " + str(sim.regfile.get(4)) + "      \nR5 = " + str(sim.regfile.get(5))+
+                            "\nR6 = " + str(sim.regfile.get(6)) + " \nR7 = " + str(sim.regfile.get(7)) + "      \nR8 = " + str(sim.regfile.get(8))+
+                            "\nR9 = " + str(sim.regfile.get(9)) + " \nR10 = " + str(sim.regfile.get(10)))
+        app.setLabel("Registers1", "R11 = " + str(sim.regfile.get(11)) + "     \nR12 = " + str(sim.regfile.get(12)) + "   \nR13 = " + str(sim.regfile.get(13))+ 
+                            "\nR14 = " + str(sim.regfile.get(14)) + " \nR15 = " + str(sim.regfile.get(15)) + "      \nR16 = " + str(sim.regfile.get(16))+
+                            "\nR17 = " + str(sim.regfile.get(17)) + " \nR18 = " + str(sim.regfile.get(18)) + "      \nR19 = " + str(sim.regfile.get(19))+
+                            "\nR18 = " + str(sim.regfile.get(20)) + " \nR21 = " + str(sim.regfile.get(21)))
+        app.setLabel("Registers2", "R22 = " + str(sim.regfile.get(22)) + "     \nR23 = " + str(sim.regfile.get(23)) + "   \nR24 = " + str(sim.regfile.get(24))+ 
+                            "\nR25 = " + str(sim.regfile.get(25)) + " \nR26 = " + str(sim.regfile.get(26)) + "      \nR27 = " + str(sim.regfile.get(17))+
+                            "\nR28 = " + str(sim.regfile.get(28)) + " \nR29 = " + str(sim.regfile.get(29)) + "      \nR30 = " + str(sim.regfile.get(30))+ "\nR31 = " + str(sim.regfile.get(31)))
     def openFile():
         global filename
         openfilename = askopenfilename()
@@ -206,14 +249,12 @@ def makeGUI():
 
 
     def toolPress(name):
-        if name == "Compile":
-            sim.init(compileASM_GUI())
-            print("#ToDo compile")
+        if(name=="Compile"):
+           sim.__init__(compileASM_GUI(),app)
         elif name == "Execute":
-            sim.step()
-            print("#ToDo Execute")
+            sim.runAll()
         elif name == "Execute Next":
-            print("#ToDo Execute Next")
+            sim.step()
 
 
     app = gui("M-Architecture Simulation ", "800x675")
@@ -231,37 +272,23 @@ def makeGUI():
     # Parameters passed are (row    column  columnSpan)
     # app.addLabel("Input", "Input Assembly code here", 0, 0, 2)
     app.addScrolledTextArea("title", 0, 0, 2, text="Input code here")
-    app.addLabel("Registers", "R1 = " + str(r1) + "\tR2 = " + str(r2) + "\tR3 = " + str(r3) + "\nR4 = " + str(r4), 0, 1,
-                 1)
-    app.addLabel("Registers1", "R1 = " + str(r1) + "\nR2 = " + str(r2) + "\nR3 = " + str(r3) + "\nR4 = " + str(r4), 0,
-                 2, 1)
-    app.addLabel("Registers2", "R1 = " + str(r1) + "\nR2 = " + str(r2) + "\nR3 = " + str(r3) + "\nR4 = " + str(r4), 0,
-                 3, 1)
-    # app.addLabel("Memory", "Memory Content", 1, 0, 3)
-    app.startScrollPane("PANE")
+    app.addLabel("Registers", "", 0, 1, 1)
+    app.addLabel("Registers1", "", 0, 2, 1)
+    app.addLabel("Registers2", "", 0, 3, 1)
+    app.startScrollPane("memPane")
     for x in range(1000):
-        name = str(x)
+        name = str(x) 
         app.addLabel(name, name, row=x)
         app.addLabel(name + "c1", "Memory content to be inserted here", row=x, column=1, colspan=4)
-        app.setLabelBg(name, "grey")
+        app.setLabelBg(name,("grey"))
     app.stopScrollPane()
+    redisplayReg()
+    redisplayMem()
 
-    app.setLabel("Registers", "R0 = " + str(r1) + "     \nR1 = " + str(r2) + "   \nR2 = " + str(r3) +
-                 "\nR3 = " + str(r4) + " \nR4 = " + str(r2) + "      \nR5 = " + str(r3) +
-                 "\nR6 = " + str(r4) + " \nR7 = " + str(r2) + "      \nR8 = " + str(r3) +
-                 "\nR9 = " + str(r4) + " \nR10 = " + str(r2))
-    app.setLabel("Registers1", "R11 = " + str(r1) + "     \nR12 = " + str(r2) + "   \nR13 = " + str(r3) +
-                 "\nR14 = " + str(r4) + " \nR15 = " + str(r2) + "      \nR16 = " + str(r3) +
-                 "\nR17 = " + str(r4) + " \nR18 = " + str(r2) + "      \nR19 = " + str(r3) +
-                 "\nR18 = " + str(r4) + " \nR21 = " + str(r2))
-    app.setLabel("Registers2", "R22 = " + str(r1) + "     \nR23 = " + str(r2) + "   \nR24 = " + str(r3) +
-                 "\nR25 = " + str(r4) + " \nR26 = " + str(r2) + "      \nR27 = " + str(r3) +
-                 "\nR28 = " + str(r4) + " \nR29 = " + str(r2) + "      \nR30 = " + str(r3) +
-                 "\nR31 = " + str(r4))
-    # app.setLabelBg("Input", "white")
+
     app.setLabelBg("Registers", "grey")
     app.setLabelBg("Registers2", "grey")
-    # app.setLabelBg("Memory", "Red")
+
 
     tools = ["Compile", "Execute", "Execute Next"]
     app.addToolbar(tools, toolPress)

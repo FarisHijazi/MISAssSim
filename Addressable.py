@@ -341,22 +341,29 @@ class Instruction(Addressable):
             elif opcode == 40:
                 if self.x == 0:
                     if self.func == 0:    # ADD
-                        rd = rai + rbi
-                        
+                   #    rd = rai + rbi
+                        sim.regfile[rd] = sim.regfile[rai] + sim.regfile[rbi]
                     elif self.func == 1:  # NADD
-                        rd = -rai + rbi
+                   #    rd = -rai + rbi
+                        sim.regfile[rd] = sim.regfile[-rai] + sim.regfile[rbi]
                     elif self.func == 2:  # AND
-                        rd = rai & rbi
+                   #    rd = rai & rbi
+                        sim.regfile[rd] = sim.regfile[rai] & sim.regfile[rbi] 
                     elif self.func == 3:  # CAND
-                        rd = ~rai & rbi
+                  #      rd = ~rai & rbi
+                         sim.regfile[rd] = sim.regfile[~rai] & sim.regfile[rbi] 
                     elif self.func == 4:  # OR
-                        rd = rai | rbi
+                      #  rd = rai | rbi
+                         sim.regfile[rd] = sim.regfile[rai] | sim.regfile[rbi] 
                     elif self.func == 5:  # COR
-                        rd = ~rai | rbi
+                     #   rd = ~rai | rbi
+                        sim.regfile[rd] = sim.regfile[~rai] | sim.regfile[rbi] 
                     elif self.func == 6:  # XOR
-                        rd = rai ^ rbi
+                     #   rd = rai ^ rbi
+                         sim.regfile[rd] = sim.regfile[rai] ^ sim.regfile[rbi] 
                     elif self.func == 7:  # XNOR
-                        rd = ~rai ^ rbi
+                     #   rd = ~rai ^ rbi
+                         sim.regfile[rd] = sim.regfile[~rai] ^ sim.regfile[rbi] 
                     elif self.func == 8:  # EQ
                         rd = (rai == rbi)
                     elif self.func == 9:  # NE

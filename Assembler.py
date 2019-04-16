@@ -203,9 +203,9 @@ fpu2_dict = {
     "nan.d": (1, 5, False),
 
     "add.s": (0, 8, False),
-    "add": (1, 8, False),
+    "add.d": (1, 8, False),
     "nadd.s": (0, 9, False),
-    "nadd": (1, 9, False),
+    "nadd.d": (1, 9, False),
     "mul.s": (0, 10, False),
     "mul.d": (1, 10, False),
     "div.s": (0, 11, False),
@@ -225,13 +225,13 @@ fpu2_dict = {
 # neumonic: (p, func, swap_rc_rb)
 fpu3_dict = {
     "add.s": (0, 8, False),
-    "add": (1, 8, False),
+    "add.d": (1, 8, False),
     "nadd.s": (0, 9, False),
-    "nadd": (1, 9, False),
+    "nadd.d": (1, 9, False),
     "madd.s": (0, 10, False),
-    "madd": (1, 10, False),
+    "madd.d": (1, 10, False),
     "nmadd.s": (0, 11, False),
-    "nmadd": (1, 11, False),
+    "nmadd.d": (1, 11, False),
     "min.s": (0, 12, False),
     "min.d": (1, 12, False),
     "max.s": (0, 13, False),
@@ -375,9 +375,9 @@ def asmtoint3(d):
         d.imm = int(d.args[3])
     # Store I-Format
     elif d.opcode == 25:
-        d.rb = d.args[2]
+        d.rb = d.args[3]
         d.ra = d.args[1]
-        d.imm = int(d.args[3])
+        d.imm = int(d.args[2])
     # Loadx R-Format
     elif d.opcode == 26:
         d.rb = d.args[3]
@@ -558,10 +558,9 @@ def asmtointALU(d):
 # d.opcode, d.ra, d.rd, d.func, d.p =
 def asmtointFPU1(d):
     d.opcode = 42
-    d.rd = reg(d.args[1])
-    d.ra = reg(d.args[2])
+    d.rdi = reg(d.args[1])
+    d.rai = reg(d.args[2])
     d.p, d.func = fpu1_dict[d.op]
-
 
 # d.opcode, d.ra, d.rbi, d.rd, d.func, d.p
 def asmtointFPU2(d):
@@ -664,8 +663,12 @@ def inttohex(d):
         rbstr = format(d.rbi, '05b')
         funcstr = format(d.func, '04b')
         sstr = format(d.s, '02b')
-        rcstr = format(d.rci, '05b')
-        rdstr = format(d.rdi, '05b')
+        if d.opcode == 27:
+            rcstr = format(d.rci, '05b')
+            rdstr = format(0, '05b')
+        else:
+            rdstr = format(d.rdi, '05b')
+            rcstr = format(0, '05b')
         instruction = opstr + rastr + rbstr + funcstr + sstr + rcstr + rdstr
     elif 32 <= d.opcode <= 36:
         opstr = format(d.opcode, '06b')
@@ -707,19 +710,26 @@ def inttohex(d):
         rastr = format(d.rai, '05b')
         rbstr = format(d.rbi, '05b')
         funcstr = format(d.func, '04b')
-        xstr = format(d.s, '02b')
+        xstr = format(d.x, '02b')
         rcstr = format(d.rci, '05b')
         rdstr = format(d.rdi, '05b')
         instruction = opstr + rastr + rbstr + funcstr + xstr + rcstr + rdstr
         # FPU instructions
-    elif d.opcode == 42 or d.opcode == 43 or d.opcode == 44:
+    elif d.opcode in {42,43,44}:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
-        rbstr = format(d.rbi, '05b')
-        rcstr = format(d.rci, '05b')
-        rdstr = format(d.rdi, '05b')
         fnstr = format(d.func, '05b')
         pstr = format(d.p, '01b')
+        rdstr = format(d.rdi, '05b')
+        if d.opcode == 42:
+            rbstr = format(0, '05b')
+            rcstr = format(0, '05b')
+        elif d.opcode == 43:
+            rbstr = format(d.rbi, '05b')
+            rcstr = format(0, '05b')
+        else:
+            rbstr = format(d.rbi, '05b')
+            rcstr = format(d.rci, '05b')
         instruction = opstr + rastr + rbstr + fnstr + pstr + rcstr + rdstr
     else:
         opstr = format(d.opcode, '02b')

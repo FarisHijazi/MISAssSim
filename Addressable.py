@@ -232,7 +232,7 @@ class Instruction(Addressable):
                     pass  # do
                 elif self.func == 3:  # SD
                     pass  # do
-        elif opcode in Instruction.sections[4]:  # i need to distinguish between the duplicated instructions in here
+        elif opcode in Instruction.sections[4]:  
             rai = self.ra  # Also: remember the NOP
             rbi = self.rb  # '?' means a part i don't know how to do
             imm = self.imm
@@ -325,23 +325,24 @@ class Instruction(Addressable):
                     rbi = rai & imm
                 elif self.func == 3:  # ROR  [ not sure about how to rotate bitwise ]
                     pass  # do
-                elif self.func == 8:  # MUL  [ im not sure why there is a MUL in the SHIFT section, IT'S NOT EVEN EXPLAINED! ]
+                elif self.func == 8:  # MUL   [signed]?
                     pass  # do
-                elif self.func == 12:  # DIV  [ SAME ]
+                elif self.func == 12:  # DIV  [signed]?
                     pass  # do
-                elif self.func == 13:  # MOD  [ SAME ]
+                elif self.func == 13:  # MOD  [signed]?
                     pass  # do
-                elif self.func == 14:  # DIVU [ SAME ]
+                elif self.func == 14:  # DIVU [signed]?
                     pass  # do
-                elif self.func == 15:  # MODU [ SAME ]
+                elif self.func == 15:  # MODU [usigned]?
                     pass  # do
 
 
             # for opcode 40
             elif opcode == 40:
                 if self.x == 0:
-                    if self.func == 0:  # ADD
+                    if self.func == 0:    # ADD
                         rd = rai + rbi
+                        
                     elif self.func == 1:  # NADD
                         rd = -rai + rbi
                     elif self.func == 2:  # AND

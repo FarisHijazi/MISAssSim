@@ -163,7 +163,6 @@ class Instruction(Addressable):
         elif c>= b and c >=a:
             return c
 
-
     def getType(self) -> str:
         pass
 
@@ -187,8 +186,8 @@ class Instruction(Addressable):
         if opcode in Instruction.sections[2]:
             pass  # do
         elif opcode in Instruction.sections[3]:
-            ra = self.ra
-            rb = self.rb
+            rai = self.ra
+            rbi = self.rb
             if opcode in {24, 25}:
                 imm = self.imm
                 if opcode == 24:

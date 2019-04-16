@@ -187,6 +187,15 @@ def makeGUI():
         app.setLabel("Registers2", "R22 = " + str(sim.regfile.get(22)) + "     \nR23 = " + str(sim.regfile.get(23)) + "   \nR24 = " + str(sim.regfile.get(24))+ 
                             "\nR25 = " + str(sim.regfile.get(25)) + " \nR26 = " + str(sim.regfile.get(26)) + "      \nR27 = " + str(sim.regfile.get(17))+
                             "\nR28 = " + str(sim.regfile.get(28)) + " \nR29 = " + str(sim.regfile.get(29)) + "      \nR30 = " + str(sim.regfile.get(30))+ "\nR31 = " + str(sim.regfile.get(31)))
+    def redisplayMem():
+        #This is a naaive way it can be optimized, no time
+        app.openScrollPane("memPane")
+        index = 0
+        for x in sim.mem.theBytes:
+            name = str(index) + "c1"
+            app.setLabel(name, sim.mem.theBytes[index])
+            index +=1
+        app.stopScrollPane()
     def openFile():
         global filename
         openfilename = askopenfilename()

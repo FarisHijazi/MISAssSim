@@ -148,6 +148,21 @@ class Instruction(Addressable):
         from Assembler import decodeToHex
         return decodeToHex(self)
 
+    def minof3(self,a,b,c):
+        if a<= b and a <=c:
+            return a
+        elif b<= a and b <=c:
+            return b
+        elif c<= b and c <=a:
+            return c
+    def maxof3(self,a,b,c):
+        if a>= b and a >=c:
+            return a
+        elif b>= a and b >=c:
+            return b
+        elif c>= b and c >=a:
+            return c
+
 
     def getType(self) -> str:
         pass
@@ -172,8 +187,8 @@ class Instruction(Addressable):
         if opcode in Instruction.sections[2]:
             pass  # do
         elif opcode in Instruction.sections[3]:
-            rai = self.ra
-            rbi = self.rb
+            ra = self.ra
+            rb = self.rb
             if opcode in {24, 25}:
                 imm = self.imm
                 if opcode == 24:
@@ -186,22 +201,68 @@ class Instruction(Addressable):
                     elif self.func == 3:  # LDU
                         pass  # do
                     elif self.func == 4:  # LB
-                        pass  # do
+                        index = sim.regfile.get(self.rai) + self.imm
+                        binaryString = sim.mem.theBytes[index]
+                        print("Binary String : " + binaryString)
+                        sim.regfile.set(self.rbi,int(binaryString,2))
                     elif self.func == 5:  # LH
-                        pass  # do
+                        index = sim.regfile.get(self.rai) + self.imm
+                        binaryString = sim.mem.theBytes[index]
+                        binaryString1 = sim.mem.theBytes[index + 1]
+                        finalString = binaryString + binaryString1
+                        sim.regfile.set(self.rbi,int(finalString,2))
                     elif self.func == 6:  # LW
-                        pass  # do
+                        index = sim.regfile.get(self.rai) + self.imm
+                        binaryString = sim.mem.theBytes[index]
+                        binaryString1 = sim.mem.theBytes[index + 1]
+                        binaryString2 = sim.mem.theBytes[index + 2]    
+                        binaryString3 = sim.mem.theBytes[index + 3]                      
+                        finalString = binaryString + binaryString1 + binaryString2 + binaryString3
+                        sim.regfile.set(self.rbi,int(finalString,2))
                     elif self.func == 7:  # LD
-                        pass  # do
+                        index = sim.regfile.get(self.rai) + self.imm
+                        binaryString = sim.mem.theBytes[index]
+                        binaryString1 = sim.mem.theBytes[index + 1]
+                        binaryString2 = sim.mem.theBytes[index + 2]    
+                        binaryString3 = sim.mem.theBytes[index + 3]     
+                        binaryString4 = sim.mem.theBytes[index + 4]
+                        binaryString5 = sim.mem.theBytes[index + 5]    
+                        binaryString6 = sim.mem.theBytes[index + 6]   
+                        binaryString7 = sim.mem.theBytes[index + 7]                              
+                        finalString = binaryString + binaryString1 + binaryString2 + binaryString3 + binaryString4 + binaryString5 + binaryString6 + binaryString7
+                        sim.regfile.set(self.rbi,int(finalString,2))
                 elif opcode == 25:
                     if self.func == 0:  # SB
-                        pass  # do
+                        rValue = sim.regfile.get(self.rbi)
+                        rValueBin = format(rValue,'064b')
+                        index = sim.regfile.get(self.rai) + self.imm
+                        sim.mem.theBytes[index] = rValueBin[56:64]
                     elif self.func == 1:  # SH
-                        pass  # do
+                        rValue = sim.regfile.get(self.rbi)
+                        rValueBin = format(rValue,'064b')
+                        index = sim.regfile.get(self.rai) + self.imm
+                        sim.mem.theBytes[index+1] = rValueBin[56:64]
+                        sim.mem.theBytes[index] = rValueBin[48:56]
                     elif self.func == 2:  # SW
-                        pass  # do
+                        rValue = sim.regfile.get(self.rbi)
+                        rValueBin = format(rValue,'064b')
+                        index = sim.regfile.get(self.rai) + self.imm
+                        sim.mem.theBytes[index+3] = rValueBin[56:64]
+                        sim.mem.theBytes[index+2] = rValueBin[48:56]
+                        sim.mem.theBytes[index+1] = rValueBin[40:48]
+                        sim.mem.theBytes[index] = rValueBin[32:40]
                     elif self.func == 3:  # SD
-                        pass  # do
+                        rValue = sim.regfile.get(self.rbi)
+                        rValueBin = format(rValue,'064b')
+                        index = sim.regfile.get(self.rai) + self.imm
+                        sim.mem.theBytes[index+7] = rValueBin[56:64]
+                        sim.mem.theBytes[index+6] = rValueBin[48:56]
+                        sim.mem.theBytes[index+5] = rValueBin[40:48]
+                        sim.mem.theBytes[index+4] = rValueBin[32:40]
+                        sim.mem.theBytes[index+3] = rValueBin[24:32]
+                        sim.mem.theBytes[index+2] = rValueBin[16:24]
+                        sim.mem.theBytes[index+1] = rValueBin[8:16]
+                        sim.mem.theBytes[index] = rValueBin[0:8]
             elif opcode == 26:  # LoadX
                 s = self.s
                 rd = self.rd
@@ -469,72 +530,67 @@ class Instruction(Addressable):
 
 
         elif opcode in Instruction.sections[5]:
-            rai = self.ra
-            rbi = self.rb
-            rc = self.rc
-            rd = self.rd
-            x = self.x
             if x == 0:
                 if self.func == 0:
-                    sim.regfile[rd] = sim.regfile[rai] + sim.regfile[rbi] + sim.regfile[rbi]
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
                 elif self.func == 1:
-                    pass  # do
+                    sim.regfile.set(self.rdi, -sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
                 elif self.func == 2:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) & sim.regfile.get(self.rbi) & sim.regfile.get(self.rci))
                 elif self.func == 3:
-                    pass  # do
+                    sim.regfile.set(self.rdi, ~sim.regfile.get(self.rai) & sim.regfile.get(self.rbi) & sim.regfile.get(self.rci))
                 elif self.func == 4:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) | sim.regfile.get(self.rbi) | sim.regfile.get(self.rci))
                 elif self.func == 5:
-                    pass  # do
+                    sim.regfile.set(self.rdi, ~sim.regfile.get(self.rai) | sim.regfile.get(self.rbi) | sim.regfile.get(self.rci))
                 elif self.func == 6:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) ^ sim.regfile.get(self.rbi) ^ sim.regfile.get(self.rci))
                 elif self.func == 7:
-                    pass  # do
+                    sim.regfile.set(self.rdi, ~sim.regfile.get(self.rai) ^ sim.regfile.get(self.rbi) ^ sim.regfile.get(self.rci))
             elif x == 1:
                 if self.func == 0:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) and sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 1:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) and sim.regfile.get(self.rbi) != sim.regfile.get(self.rci))
                 elif self.func == 2:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) and sim.regfile.get(self.rbi) < sim.regfile.get(self.rci))
                 elif self.func == 3:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) and sim.regfile.get(self.rbi) > sim.regfile.get(self.rci))
                 elif self.func == 4:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) and sim.regfile.get(self.rbi) < sim.regfile.get(self.rci))
                 elif self.func == 5:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) and sim.regfile.get(self.rbi) > sim.regfile.get(self.rci))
                 elif self.func == 6:
-                    pass  # do
+                    sim.regfile.set(self.rdi, self.minof3(sim.regfile.get(self.rai),sim.regfile.get(self.rbi),sim.regfile.get(self.rci)))
                 elif self.func == 7:
-                    pass  # do
+                    sim.regfile.set(self.rdi, self.maxof3(sim.regfile.get(self.rai),sim.regfile.get(self.rbi),sim.regfile.get(self.rci)))
                 elif self.func == 8:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 9:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 10:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 11:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 12:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 13:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 14:
-                    pass  # do
+                    sim.regfile.set(self.rdi, self.minof3(sim.regfile.get(self.rai),sim.regfile.get(self.rbi),sim.regfile.get(self.rci)))
                 elif self.func == 15:
-                    pass  # do
+                    sim.regfile.set(self.rdi, self.maxof3(sim.regfile.get(self.rai),sim.regfile.get(self.rbi),sim.regfile.get(self.rci)))
             elif x == 2:
                 if self.func == 0:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rbi) if sim.regfile.get(self.rai)!=0 else sim.regfile.get(self.rdi))
                 elif self.func == 1:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rbi) if sim.regfile.get(self.rai)<0 else sim.regfile.get(self.rdi))
                 elif self.func == 2:
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rbi) if sim.regfile.get(self.rai)>0 else sim.regfile.get(self.rdi))
                 elif self.func == 4:  # 3 is skipped according to doc
-                    pass  # do
+                    sim.regfile.set(self.rdi, sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
                 elif self.func == 5:
-                    pass  # do
+                    sim.regfile.set(self.rdi, -sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
         elif opcode in Instruction.sections[6]:
             pass  # do
             # # single precision fp

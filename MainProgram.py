@@ -1,11 +1,9 @@
-from tkinter import *
 import os.path
-from argparse import ArgumentParser
-from tkinter.filedialog import askopenfilename, asksaveasfilename
-from AssembledFile import AssembledFile
-
 import sys
+from tkinter import *
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
+from AssembledFile import AssembledFile
 from Simulator import Simulator
 from appjar import gui
 
@@ -67,58 +65,12 @@ def long_to_bytes(val, endianness='big'):
     return s
 
 
-def makeGUI():
+def makeGUI(text):
     app = gui("M-Architecture Simulation ", "800x675")
     app.setSticky("news")
     app.setExpand("both")
     app.setFont(14)
 
-
-    def redisplayReg():
-        app.setLabel("Registers",
-                     "R0 = {0}"
-                     "\nR1 = {1}"
-                     "\nR2 = {2}"
-                     "\nR3 = {3}"
-                     "\nR4 = {4}"
-                     "\nR5 = {5}"
-                     "\nR6 = {6}"
-                     "\nR7 = {7}"
-                     "\nR8 = {8}"
-                     "\nR9 = {9}"
-                     "\nR10 = {10}".format(
-                         sim.regfile.get(0), sim.regfile.get(1), sim.regfile.get(2), sim.regfile.get(3),
-                         sim.regfile.get(4), sim.regfile.get(5), sim.regfile.get(6), sim.regfile.get(7),
-                         sim.regfile.get(8), sim.regfile.get(9), sim.regfile.get(10)))
-        app.setLabel("Registers1",
-                     "R11 = {0}"
-                     "\nR12 = {1}"
-                     "\nR13 = {2}"
-                     "\nR14 = {3}"
-                     "\nR15 = {4}"
-                     "\nR16 = {5}"
-                     "\nR17 = {6}"
-                     "\nR18 = {7}"
-                     "\nR19 = {8}"
-                     "\nR18 = {9}"
-                     "\nR21 = {10}".format(
-                         sim.regfile.get(11), sim.regfile.get(12), sim.regfile.get(13), sim.regfile.get(14),
-                         sim.regfile.get(15), sim.regfile.get(16), sim.regfile.get(17), sim.regfile.get(18),
-                         sim.regfile.get(19), sim.regfile.get(20), sim.regfile.get(21)))
-        app.setLabel("Registers2",
-                     "R22 = {0}"
-                     "\nR23 = {1}"
-                     "\nR24 = {2}"
-                     "\nR25 = {3}"
-                     "\nR26 = {4}"
-                     "\nR27 = {5}"
-                     "\nR28 = {6}"
-                     "\nR29 = {7}"
-                     "\nR30 = {8}"
-                     "\nR31 = {9}".format(
-                         sim.regfile.get(22), sim.regfile.get(23), sim.regfile.get(24), sim.regfile.get(25),
-                         sim.regfile.get(26), sim.regfile.get(17), sim.regfile.get(28), sim.regfile.get(29),
-                         sim.regfile.get(30), sim.regfile.get(31)))
 
 
     def redisplayMem():
@@ -188,32 +140,12 @@ def makeGUI():
         elif name == "Close":
             app.stop()
 
-
-    r1 = 3
-    r2 = 2
-    r3 = 9
-    r4 = 10
-    # Parameters passed are (row    column  columnSpan)
-    # app.addLabel("Input", "Input Assembly code here", 0, 0, 2)
-    app.addScrolledTextArea("code", 0, 0, 2, text="Input code here")
-
-    app.addLabel("Registers", "R1 = {0}"
-                              "\tR2 = {1}"
-                              "\tR3 = {2}"
-                              "\nR4 = {3}".format(r1, r2, r3, r4), 0, 1, 1)
-    app.addLabel("Registers1", "R1 = {0}"
-                               "\nR2 = {1}"
-                               "\nR3 = {2}"
-                               "\nR4 = {3}".format(r1, r2, r3, r4), 0, 2, 1)
-    app.addLabel("Registers2", "R1 = {0}"
-                               "\nR2 = {1}"
-                               "\nR3 = {2}"
-                               "\nR4 = {3}".format(r1, r2, r3, r4), 0, 3, 1)
+    app.addScrolledTextArea("code", 0, 0, 2, text=text)
 
 
     def toolPress(name):
         if name == "Compile":
-            sim.__init__(compileASM_GUI(), app)
+            sim.init(compileASM_GUI(), app)
         elif name == "Execute":
             sim.runAll()
         elif name == "Execute Next":
@@ -223,19 +155,30 @@ def makeGUI():
     fileMenus = ["Open", "Save", "Save as...", "-", "Close"]
     app.addMenuList("File", fileMenus, menuPress)
 
+    app.startScrollPane("regs")
+    for i, name, value, rep in sim.sim.regfile.items():
+        # app.addLabel(name + "_name", text=name, row=i, column=1, colspan=1, selectable=False)
+        app.addLabelEntry(name, row=i, column=2, colspan=6)
+        app.setEntry(name, value)
+        app.addLabel(name + "_rep", text=rep, row=i, column=3, colspan=1, selectable=False)
+        # app.addLabel("{0}regs".format(i), "", row=i, column=1, colspan=4)
+        # app.setLabel(name, sim.regfile[i])
+    app.stopScrollPane()
+
     # Parameters passed are (row    column  columnSpan)
     app.startScrollPane("memPane")
     for x in range(len(sim.mem.theBytes)):
-        app.addLabel(str(x), str(x), row=x)
+        app.addLabel(str(x), text=str(x), row=x)
         app.addLabel("{0}c1".format(x), "", row=x, column=1, colspan=4)
         app.setLabelBg(str(x), "grey")
-
     app.stopScrollPane()
-    redisplayReg()
+
+
+    sim.redisplayReg()
     redisplayMem()
 
-    app.setLabelBg("Registers", "grey")
-    app.setLabelBg("Registers2", "grey")
+    # app.setLabelBg("Registers", "grey")
+    # app.setLabelBg("Registers2", "grey")
 
     tools = ["Compile", "Execute", "Execute Next"]
     app.addToolbar(tools, toolPress)
@@ -246,29 +189,24 @@ def makeGUI():
 # Assembler Main code
 
 # argument parsing
-parser = ArgumentParser()
-parser.add_argument('-f', '--file', type=str, default="", help='path to the file program file (optional)')
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--file', default="", nargs='?', type=argparse.FileType('r'), help='path to the file program file (optional)')
 parser.add_argument('-i', '--asm', type=str, default="",
                     help="Assembly instruction(s) to assemble (separate with ';' as new line)")
 parser.add_argument('-t', '--text', default=False, action="store_true", help='Text mode')  # text mode
-parser.add_argument('-r', '--run', default=False, action="store_true", help='run after assembling (only for cmd mode (non-gui))')
+parser.add_argument('-r', '--run', default=False, action="store_true",
+                    help='run after assembling (only for cmd mode (non-gui))')
+# parser.add_argument('-ng', '--no-gui', default=False, action="store_true", help='run without gui (disabled by default)')
 cmd_args = parser.parse_args()
 
-file = cmd_args.file
-
+_assembledFile: AssembledFile
 sim = Simulator()
 
 # if the user passed a valid filepath, then don't run GUI and just compile it in the command line
-if file and os.path.isfile(file):
-    file = open(file)
-    _assembledFile = compileASM(file.read())
 
-    sim.init(_assembledFile)
 
-    if cmd_args.run and _assembledFile:
-        sim.init(_assembledFile)
-        sim.runAll()
-elif cmd_args.text:
+if cmd_args.text:
     accumulatedInput = ""
 
 
@@ -309,17 +247,34 @@ elif cmd_args.text:
             accumulatedInput += ipt + '\n'
             i += 1
 
+if cmd_args.file:
+    _assembledFile = compileASM(cmd_args.file.read())
+    # cmd_args.file = file
+
+    sim.init(_assembledFile)
+
 # if assembly text was passed (separate with ';')'
-elif cmd_args.asm:
+if cmd_args.asm:
     instructions = cmd_args.asm.split(';')
     print("instructions:", instructions)
     asm = "\n".join(instructions)
 
     _assembledFile = compileASM(asm)
 
-    if cmd_args.run and _assembledFile:
-        sim.init(_assembledFile)
-        sim.runAll()
-else:
+
+if not cmd_args.run:
+    text = ""
+    if cmd_args and cmd_args.file:
+        text = cmd_args.file.read()
+    if cmd_args and cmd_args.asm:
+        text = cmd_args.asm
+
+    # clear args so that appjar wouldn't get messed up
+    sys.argv = [sys.argv[0]]
+
     Tk().withdraw()
-    frame = makeGUI()
+    frame = makeGUI(text)
+
+elif _assembledFile:
+    sim.init(_assembledFile)
+    sim.runAll()

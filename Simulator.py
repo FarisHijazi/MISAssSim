@@ -2,6 +2,30 @@ from Addressable import Instruction
 from AssembledFile import AssembledFile
 
 
+def parseFloatStr(string):
+    return 0  # TODO:
+
+
+def parseDecStr(string):
+    return int(string)
+
+
+def parseHexStr(string):
+    return int(string, 16)
+
+
+def parseBinStr(string):
+    return int(string, 2)
+
+
+representationParsers = {
+    'fp': parseFloatStr,
+    'hex': parseHexStr,
+    'bin': parseBinStr,
+    'dec': parseDecStr,
+}
+
+
 class Simulator:
     def __init__(self, assembledFile=None, gui=None):
         self.regfile = Simulator.Regfile("gp")
@@ -10,11 +34,13 @@ class Simulator:
         self.assembledFile = assembledFile
         self.gui = gui
         Simulator.sim = self
+        self.updateMemFromGUI()
+        print(self.regfile)
 
 
-    def init(self, assembledFile: AssembledFile):
+    def init(self, *args, **kwargs):
         """ resets the simulator, preparing it for a new file """
-        self.__init__(assembledFile)
+        self.__init__(*args, **kwargs)
         # reset memory and stuff
 
 
@@ -29,6 +55,9 @@ class Simulator:
         if self.pc >= len(self.assembledFile.directiveSegments.get('.text')):
             print("reached end of .text segment")
             return
+
+        self.updateMemFromGUI()
+
         next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
         self.executeInstruction(next_instruction)
         print('step() Run instr: "{0}"'
@@ -44,6 +73,7 @@ class Simulator:
         if self.assembledFile is None:
             raise Exception("no assembled file, must compile")
         else:
+            self.updateMemFromGUI()
             instructions = self.assembledFile.directiveSegments.get('.text', [])
             for instr in instructions:
                 if self.pc < len(instructions):
@@ -56,6 +86,30 @@ class Simulator:
             self.redisplayMem()
 
 
+    def updateMemFromGUI(self):
+        if self.gui is None:
+            print("WARNING: simulator trying to update regs from gui but no gui object")
+            return
+        self.gui.openScrollPane("regs")
+
+        for i, name, value, rep in self.regfile.items():
+            guistr = self.gui.getEntry(name)
+            representationParsers.get(rep)(guistr)
+
+        self.gui.stopScrollPane()
+
+
+    def updateRegsFromGUI(self):
+        # self.gui.openScrollPane("memPane")
+        #
+        # for i, name, value, rep in self.regfile.items():
+        #     guistr = self.gui.getEntry(name, value)
+        #     representationParsers.get(rep)(guistr)
+        #
+        # self.gui.stopScrollPane()
+        pass
+
+
     def redisplayMem(self):
         if self.gui is None:
             # raise Exception("No gui object")
@@ -63,11 +117,9 @@ class Simulator:
         else:
             # This is a naaive way it can be optimized, no time
             self.gui.openScrollPane("memPane")
-            index = 0
-            for x in self.mem.theBytes:
+            for index in range(len(self.mem.theBytes)):
                 name = str(index) + "c1"
                 self.gui.setLabel(name, self.mem.theBytes[index])
-                index += 1
                 # self.gui.stopScrollPane()
 
 
@@ -76,82 +128,11 @@ class Simulator:
             # raise Exception("No gui object")
             print("Register content:".format(self.regfile))
         else:
-            self.gui.setLabel("Registers",
-                              "R0 = {0}"
-                              "\nR1 = {1}"
-                              "\nR2 = {2}"
-                              "\nR3 = {3}"
-                              "\nR4 = {4}"
-                              "\nR5 = {5}"
-                              "\nR6 = {6}"
-                              "\nR7 = {7}"
-                              "\nR8 = {8}"
-                              "\nR9 = {9}"
-                              "\nR10 = {10}".format(
-                                  self.regfile.get(0),
-                                  self.regfile.get(1),
-                                  self.regfile.get(2),
-                                  self.regfile.get(3),
-                                  self.regfile.get(4),
-                                  self.regfile.get(5),
-                                  self.regfile.get(6),
-                                  self.regfile.get(7),
-                                  self.regfile.get(8),
-                                  self.regfile.get(9),
-                                  self.regfile.get(10))
-                              )
-            self.gui.setLabel("Registers1",
-                              "R11 = {0}"
-                              "\nR12 = {1}"
-                              "\nR13 = {2}"
-                              "\nR14 = {3}"
-                              "\nR15 = {4}"
-                              "\nR16 = {5}"
-                              "\nR17 = {6}"
-                              "\nR18 = {7}"
-                              "\nR19 = {8}"
-                              "\nR18 = {9}"
-                              "\nR21 = {10}".format(
-                                  self.regfile.get(11),
-                                  self.regfile.get(12),
-                                  self.regfile.get(13),
-                                  self.regfile.get(14),
-                                  self.regfile.get(15),
-                                  self.regfile.get(16),
-                                  self.regfile.get(17),
-                                  self.regfile.get(18),
-                                  self.regfile.get(19),
-                                  self.regfile.get(20),
-                                  self.regfile.get(21))
-                              )
-            self.gui.setLabel("Registers2",
-                              "R22 = {0}"
-                              "\nR23 = {1}"
-                              "\nR24 = {2}"
-                              "\nR25 = {3}"
-                              "\nR26 = {4}"
-                              "\nR27 = {5}"
-                              "\nR28 = {6}"
-                              "\nR29 = {7}"
-                              "\nR30 = {8}"
-                              "\nR31 = {9}".format(
-                                  self.regfile.get(22),
-                                  self.regfile.get(23),
-                                  self.regfile.get(24),
-                                  self.regfile.get(25),
-                                  self.regfile.get(26),
-                                  self.regfile.get(17),
-                                  self.regfile.get(28),
-                                  self.regfile.get(29),
-                                  self.regfile.get(30),
-                                  self.regfile.get(31))
-                              )
+            self.gui.openScrollPane("regs")
 
-            for i in range(len(self.mem.theBytes)):
-                name = "{0}c1".format(str(i))
-                self.gui.setLabel(name, self.mem.theBytes[i])
-
-            # self.gui.stopScrollPane()
+            for i, name, value, rep in self.regfile.items():
+                self.gui.setEntry(name, value)
+            self.gui.stopScrollPane()
 
     class Regfile:
         # (width in bits)
@@ -159,9 +140,9 @@ class Simulator:
         # format of the reg file: (value, name, representation)
         # representation will be one of: ('fp', 'int', 'hex', 'bin', 'dec')
         initializer = {
-            "gp": (32, ['r{}'.format(i) for i in range(32)], ['int'] * 32),
-            "e": (64, ['e{}'.format(i) for i in range(64)], ['int'] * 64),
-            "c": (64, ['c{}'.format(i) for i in range(64)], ['int'] * 64),
+            "gp": (32, ['r{}'.format(i) for i in range(32)], ['dec'] * 32),
+            "e": (64, ['e{}'.format(i) for i in range(64)], ['dec'] * 64),
+            "c": (64, ['c{}'.format(i) for i in range(64)], ['dec'] * 64),
             "fp": (64, ['f{}'.format(i) for i in range(64)], ['fp'] * 64)
         }
 
@@ -174,12 +155,22 @@ class Simulator:
 
             self.name = name  # the name of THIS regfile (gp, e, c, fp)
 
-            self.names = names  # list of reg names ['r0', 'r1', 'r2'...]
+            self.__names__ = names  # list of reg __names__ ['r0', 'r1', 'r2'...]
             self.__regs__ = [0] * length
-            self.representations = representations
+            self.representationParsers = representations
 
             self.__regs__[1] = 1  # DEBUG: FIXME: just for testing
-            print("__regs__:", self.__regs__)
+
+
+        def items(self, stringify=False):
+            """
+            returns a list containing the info for each register
+            :return: (index, name: str, value: int, representation: str)
+            """
+            if not stringify:
+                return zip(range(len(self.__names__)), self.__names__, self.__regs__, self.representationParsers)
+            return zip(map(str, range(len(self.__names__))), self.__names__, map(str, self.__regs__),
+                       self.representationParsers)
 
 
         def __setitem__(self, key, value):
@@ -191,8 +182,8 @@ class Simulator:
 
 
         def set(self, index, newVal, instruction: Instruction = None):
-            if type(index) is str:  # this line allows for indexing by reg names (as strings)
-                index = self.names.index(index)
+            if type(index) is str:  # this line allows for indexing by reg __names__ (as strings)
+                index = self.__names__.index(index)
 
             print("setting reg {}: {} -> {}".format(index, self.__regs__[index], newVal))
             self.__regs__[index] = newVal
@@ -203,7 +194,8 @@ class Simulator:
 
 
         def __str__(self):
-            return "{} register file:\n\t{}".format(self.name, "\n\t".join(map(str, zip(self.names, self.__regs__))))
+            return "{} register file:\n\t{}".format(self.name,
+                                                    "\n\t".join(map(str, zip(self.__names__, self.__regs__))))
 
     class Mem:
         def __init__(self):

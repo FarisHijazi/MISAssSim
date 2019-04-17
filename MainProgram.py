@@ -1,21 +1,14 @@
 from tkinter import *
 import re
-from appjar import gui
-# from tkFileDialog import *
-from tkinter import filedialog
 import os.path
 from argparse import ArgumentParser
-import sys
 from tkinter.filedialog import askopenfilename, asksaveasfilename
-import Assembler
 from Addressable import *
 from AssembledFile import AssembledFile
 
 import sys
-from time import time
 
 from appjar import gui
-
 
 
 class Simulator:
@@ -34,6 +27,10 @@ class Simulator:
         # reset memory and stuff
 
 
+    def executeInstruction(self, instruction: Instruction):
+        instruction.execute(self)
+
+
     def step(self):
         if self.assembledFile is None:
             raise Exception("no assembled file, must compile")
@@ -46,9 +43,8 @@ class Simulator:
         print('step() Run instr: "{0}"\nRegFile: {1}'.format(str(next_instruction), str(self.regfile)))
         self.pc += 1
 
-        if self.gui:
-            self.redisplayReg()
-            self.redisplayMem()
+        self.redisplayReg()
+        self.redisplayMem()
 
 
     def runAll(self):
@@ -67,46 +63,45 @@ class Simulator:
             self.redisplayMem()
 
 
+    def redisplayMem(self):
+        if self.gui is None:
+            # raise Exception("No gui object")
+            print("Register content:".format(self.regfile))
+        else:
+            #This is a naaive way it can be optimized, no time
+            self.gui.openScrollPane("memPane")
+            index = 0
+            for x in sim.mem.theBytes:
+                name = str(index) + "c1"
+                self.gui.setLabel(name, sim.mem.theBytes[index])
+                index += 1
+                self.gui.stopScrollPane()
+                raise Exception("no assembled file, must compile")
+
+
     def redisplayReg(self):
         if self.gui is None:
             # raise Exception("No gui object")
             print("Register content:".format(self.regfile))
         else:
-            self.gui.setLabel("Registers", "R0 = " + str(self.regfile.get(0)) + "     \nR1 = " + str(
-                self.regfile.get(1)) + "   \nR2 = " + str(self.regfile.get(2)) +
-                              "\nR3 = " + str(self.regfile.get(3)) + " \nR4 = " + str(
-                self.regfile.get(4)) + "      \nR5 = " + str(self.regfile.get(5)) +
-                              "\nR6 = " + str(self.regfile.get(6)) + " \nR7 = " + str(
-                self.regfile.get(7)) + "      \nR8 = " + str(self.regfile.get(8)) +
-                              "\nR9 = " + str(self.regfile.get(9)) + " \nR10 = " + str(self.regfile.get(10)))
-            self.gui.setLabel("Registers1", "R11 = " + str(self.regfile.get(11)) + "     \nR12 = " + str(
-                self.regfile.get(12)) + "   \nR13 = " + str(self.regfile.get(13)) +
-                              "\nR14 = " + str(self.regfile.get(14)) + " \nR15 = " + str(
-                self.regfile.get(15)) + "      \nR16 = " + str(self.regfile.get(16)) +
-                              "\nR17 = " + str(self.regfile.get(17)) + " \nR18 = " + str(
-                self.regfile.get(18)) + "      \nR19 = " + str(self.regfile.get(19)) +
-                              "\nR18 = " + str(self.regfile.get(20)) + " \nR21 = " + str(self.regfile.get(21)))
-            self.gui.setLabel("Registers2", "R22 = " + str(self.regfile.get(22)) + "     \nR23 = " + str(
-                self.regfile.get(23)) + "   \nR24 = " + str(self.regfile.get(24)) +
-                              "\nR25 = " + str(self.regfile.get(25)) + " \nR26 = " + str(
-                self.regfile.get(26)) + "      \nR27 = " + str(self.regfile.get(17)) +
-                              "\nR28 = " + str(self.regfile.get(28)) + " \nR29 = " + str(
-                self.regfile.get(29)) + "      \nR30 = " + str(self.regfile.get(30)) + "\nR31 = " + str(
-                sim.regfile.get(31)))
+            self.gui.setLabel("Registers", "R0 = " + str(self.regfile.get(0)) + "     \nR1 = " + str(self.regfile.get(1)) + "   \nR2 = " + str(self.regfile.get(2))+
+                                "\nR3 = " + str(self.regfile.get(3)) + " \nR4 = " + str(self.regfile.get(4)) + "      \nR5 = " + str(self.regfile.get(5))+
+                                "\nR6 = " + str(self.regfile.get(6)) + " \nR7 = " + str(self.regfile.get(7)) + "      \nR8 = " + str(self.regfile.get(8))+
+                                "\nR9 = " + str(self.regfile.get(9)) + " \nR10 = " + str(self.regfile.get(10)))
+            self.gui.setLabel("Registers1", "R11 = " + str(self.regfile.get(11)) + "     \nR12 = " + str(self.regfile.get(12)) + "   \nR13 = " + str(self.regfile.get(13))+
+                                "\nR14 = " + str(self.regfile.get(14)) + " \nR15 = " + str(self.regfile.get(15)) + "      \nR16 = " + str(self.regfile.get(16))+
+                                "\nR17 = " + str(self.regfile.get(17)) + " \nR18 = " + str(self.regfile.get(18)) + "      \nR19 = " + str(self.regfile.get(19))+
+                                "\nR18 = " + str(self.regfile.get(20)) + " \nR21 = " + str(self.regfile.get(21)))
+            self.gui.setLabel("Registers2", "R22 = " + str(self.regfile.get(22)) + "     \nR23 = " + str(self.regfile.get(23)) + "   \nR24 = " + str(self.regfile.get(24))+
+                                "\nR25 = " + str(self.regfile.get(25)) + " \nR26 = " + str(self.regfile.get(26)) + "      \nR27 = " + str(self.regfile.get(17))+
+                                "\nR28 = " + str(self.regfile.get(28)) + " \nR29 = " + str(self.regfile.get(29)) + "      \nR30 = " + str(self.regfile.get(30))+ "\nR31 = " + str(sim.regfile.get(31)))
 
+            for i in range(len(sim.mem.theBytes)):
+                name = str(i) + "c1"
+                self.gui.setLabel(name, sim.mem.theBytes[i])
 
-    def redisplayMem(self):
-        if self.gui is None:
-            print('Memory content:'.format(self.mem))
-        else:
-            # This is a naaive way it can be optimized, no time
-            self.gui.openScrollPane("memPane")
+            self.gui.stopScrollPane()
 
-        for i in range(len(sim.mem.theBytes)):
-            name = str(i) + "c1"
-            self.gui.setLabel(name, sim.mem.theBytes[i])
-
-        self.gui.stopScrollPane()
 
     class Regfile:
         # (width in bits)
@@ -127,13 +122,13 @@ class Simulator:
 
             length, names, representations = Simulator.Regfile.initializer.get(name)
 
-            self.name = name
+            self.name = name  # the name of THIS regfile (gp, e, c, fp)
 
-            self.names = names
+            self.names = names  # list of reg names ['r0', 'r1', 'r2'...]
             self.__regs__ = [0] * length
             self.representations = representations
 
-            self.__regs__[1] = 1
+            self.__regs__[1] = 1  # DEBUG: FIXME: just for testing
             print("__regs__:", self.__regs__)
 
 
@@ -174,12 +169,9 @@ class Simulator:
         def __str__(self):
             return "Memory:\n\t{}".format("\n\t".join(map(str, zip(range(len(self.theBytes)), self.theBytes))))
 
-    def executeInstruction(self, instruction: Instruction):
-        instruction.execute(self)
 
 
 outfile = "hex"
-fileexists = False
 sim = None
 
 
@@ -307,11 +299,9 @@ def makeGUI():
 
     def saveFileAs():
         global outfile
-        global fileexists
         saveasfilename = asksaveasfilename()
         if saveasfilename is not None:
             outfile = saveasfilename
-            fileexists = True
             asmdata = textArea.get("1.0", "end - 1c")
             asmfile = open(outfile, "w")
             asmfile.seek(0)

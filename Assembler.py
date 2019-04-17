@@ -15,11 +15,10 @@ import sys
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 # TODO: fix issue: the dictionaries, sometimes imm='r0' or wtver, BIG PROBLEM! test mul for an example
+import AssembledFile
 
 outfile = "Untitled"
 fileexists = False
-symbolTable = {}
-global currentLine
 
 # opcode 37 op:(func, imm_L, (imm_R|p), imm)
 sec4_SHIFT_dict = {
@@ -504,7 +503,6 @@ def asmtointRET(d):
     d.func, d.imm = translatedDictArgs(d, sec4_RET_dict[d.op])
 
 
-# TODO: test this
 def translatedDictArgs(instr, tup: tuple):
     """
     returns the translate version of tup, but translate, example:
@@ -692,26 +690,36 @@ def asmtoint5(d):
 
 
 def inttohex(d):
+    d.calcLabelOffset()
+
+    def twos_comp(val, bits):
+        """compute the 2's complement of int value val"""
+        if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+            val = val - (1 << bits)  # compute negative value
+        return val
+
+
     instruction = "0" * 32
     if d.opcode == 2 or d.opcode == 3:
-        offsetstr = format(d.offset, '026b')
+        offsetstr = format(twos_comp(d.offset, 26), '026b')
+        offsetstr = re.sub('^-', '', offsetstr)
         instruction = format(d.opcode, '06b') + offsetstr
     # Section 2 (branch d.imm)
     elif 8 <= d.opcode <= 13:
         immstr = format(d.imm, '05b')  # p15 states this should be Uimm5 is this the correct format???
-        offsetstr = format(d.offset, '016b')
+        offsetstr = format(twos_comp(d.offset, 16), '016b')
         instruction = format(d.opcode, '06b') + format(d.rai, '05b') + immstr + offsetstr
     # JR instruction p15
     elif d.opcode == 14:
         rastr = format(d.rai, '05b')
         emptystr = format(0, '05b')
-        offsetstr = format(d.offset, '016b')
+        offsetstr = format(twos_comp(d.offset, 16), '016b')
         instruction = format(d.opcode, '06b') + rastr + emptystr + offsetstr
     # Section2 (non d.imm branch)
     elif 15 <= d.opcode <= 23:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
-        offsetstr = format(d.offset, '016b')
+        offsetstr = format(twos_comp(d.offset, 16), '016b')
         instruction = opstr + rastr + format(d.rbi, '05b') + offsetstr
         # Section 3
     elif d.opcode == 24 or d.opcode == 25:
@@ -818,6 +826,25 @@ def asmtoint(asm):
 
 
 def decodeInstruction(d):
+    def getLabelOffset(d):
+        for base in [10, 8, 16, 2]:
+            try:
+                return int(d.offset, base=base)
+            except:
+                pass
+
+        if not d.symbolTable:
+            raise Exception(
+                "ERROR: decoding control flow isntructions requires a symbol table to be passed to decodeInstruction()")
+
+        if d.label in d.symbolTable:
+            offset = (d.symbolTable.get(d.label, 0).address - d.address) >> 5
+            print('calculated "{}" label offset: {}'.format(d.label, offset))
+            return offset
+        else:
+            return None
+
+
     # Section 6 FPU1
     if d.op in fpu1_dict:
         if len(d.args) != 3:
@@ -852,26 +879,26 @@ def decodeInstruction(d):
             d.op = d.op + "i"
 
         d.opcode = opcodes.get('b').get(d.op)
-        label = d.args[3]
-        d.offset = symbolTable[label] - currentLine
+        d.label = d.args[3]
+        d.offset = getLabelOffset(d)
         d.ra, d.rbi, d.imm = asmtointsection2(d)
     elif d.op in opcodes.get('bzero'):
         if len(d.args) != 3:
             raise Exception('Incorrect Number of arguments : ' + str(len(d.args)))
 
         d.opcode = opcodes.get('b').get(d.op)
-        label = d.args[2]
-        d.offset = symbolTable[label] - currentLine
+        d.label = d.args[2]
+        d.offset = getLabelOffset(d)
         d.ra, d.rbi, d.imm = asmtointsection2(d)
     # SECTION 2 j type (does not call asmtointsection2)
     elif d.op in opcodes.get('j'):
         if d.op == "jal" or d.op == "j":
-            label = d.args[1]
-            d.offset = symbolTable[label] - currentLine
+            d.label = d.args[1]
+            d.offset = getLabelOffset(d)
         elif d.op == "jr":
             if len(d.args) == 3:
-                label = d.args[2]
-                d.offset = symbolTable[label] - currentLine
+                d.label = d.args[2]
+                d.offset = getLabelOffset(d)
             elif len(d.args) == 2:
                 d.offset = 0
             else:
@@ -881,7 +908,7 @@ def decodeInstruction(d):
         elif d.op == "jalr":
             if len(d.args) == 4:
                 label = d.args[3]
-                d.offset = symbolTable[label] - currentLine
+                d.offset = getLabelOffset(d)
             elif len(d.args) == 3:
                 d.offset = 0
             else:
@@ -921,7 +948,8 @@ def decodeInstruction(d):
     elif d.op == "orc":
         if len(d.args) != 2:
             raise Exception('Incorrect Number of arguments')
-        asmtointNOP(d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
+        asmtointNOP(
+            d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
     # Checking if it belongs to SHIFT (Opcode 37)
     # FIXME:
     elif d.op in sec4_SHIFT_dict:

@@ -56,7 +56,7 @@ class Addressable:
         args = [arg for arg in re.split(regex, line) if arg != ""]
 
         for x in args:
-            if re.search(r'[^\w\d.\-]', x):
+            if re.search(r'[^\w\d.@\-]', x):
                 raise Exception('Invalid character encountered:', line)
 
         return args
@@ -201,12 +201,13 @@ class Instruction(Addressable):
     count = 0
 
 
-    def __init__(self, lineStr, address=-1):
-        super(Instruction, self).__init__(size=1, startAddress=address, lineStr=lineStr)
+    def __init__(self, lineStr, address=-1, symbolTable=None):
+        super(Instruction, self).__init__(size=5, startAddress=address, lineStr=lineStr)
 
         asmLine = lineStr.split('//')[0].strip()
 
         self.asmLine = asmLine
+        self.symbolTable = symbolTable
 
         self.type = self.getType()
 
@@ -234,6 +235,8 @@ class Instruction(Addressable):
         self.imm_L: int = None
         self.imm_R: int = None
         self.offset: int = None
+
+        self.label: str = None
 
         from Assembler import decodeInstruction
         try:
@@ -283,6 +286,22 @@ class Instruction(Addressable):
     }
 
 
+    def calcLabelOffset(self):
+        for base in [10, 8, 16, 2]:
+            try:
+                self.offset = int(self.offset, base=base)
+            except:
+                pass
+
+        if not self.symbolTable:
+            raise Exception(
+                "ERROR: decoding control flow isntructions requires a symbol table to be passed to decodeInstruction()")
+
+        if self.label in self.symbolTable:
+            self.offset = self.symbolTable.get(self.label, 0).address - self.address >> 5
+            print('calculated "{}" label offset: {}'.format(self.label, self.offset))
+
+
     def hex(self) -> str:
         # returns the hex string
         from Assembler import decodeToHex
@@ -311,10 +330,7 @@ class Instruction(Addressable):
         if opcode in Instruction.sections[2]:
             pass  # do
         elif opcode in Instruction.sections[3]:
-            rai = self.ra
-            rbi = self.rb
             if opcode in {24, 25}:
-                imm = self.imm
                 if opcode == 24:
                     if self.func == 0:  # LBU
                         pass  # do
@@ -388,8 +404,6 @@ class Instruction(Addressable):
                         sim.mem.theBytes[index + 1] = rValueBin[8:16]
                         sim.mem.theBytes[index] = rValueBin[0:8]
             elif opcode == 26:  # LoadX
-                s = self.s
-                rd = self.rd
                 if self.func == 0:  # LBU
                     pass  # do
                 elif self.func == 1:  # LHU
@@ -418,84 +432,75 @@ class Instruction(Addressable):
                 elif self.func == 3:  # SD
                     pass  # do
         elif opcode in Instruction.sections[4]:  # i need to distinguish between the duplicated instructions in here
-            ra = self.ra  # Also: remember the NOP
-            rb = self.rb  # '?' means a part i don't know how to do
-            n = self.n
-            x = self.x
-            imm = self.imm
-            imm_L = self.imm_L
-            imm_R = self.imm_R  # this is also p (same postion, same number of bits)
-            func = self.func
-
             # for opcode 32 - 35
             if opcode in [32, 33, 34, 45]:  # Rb is the destination here
-                if func == 0:  # ADD   [sign extend imm to 64 bits]
-                    rb = ra + imm
-                elif func == 1:  # NADD  [sign extend imm to 64 bits]
-                    rb = -ra + imm
-                elif func == 2:  # AND   [sign extend imm to 64 bits]
-                    rb = ra & imm
-                elif func == 3:  # CAND  [sign extend imm to 64 bits]
-                    rb = ~ra & imm
-                elif func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra | imm
-                elif func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~ra | imm
-                elif func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra ^ imm
-                elif func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = imm
-                elif func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra == imm)
-                elif func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm)
-                elif func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra < imm)
-                elif func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm)
-                elif func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra < imm)
-                elif func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra > imm)
-                elif func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra, imm)
-                elif func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(ra, imm)
+                if self.func == 0:  # ADD   [sign extend imm to 64 bits]
+                    rb = self.ra + self.imm
+                elif self.func == 1:  # NADD  [sign extend imm to 64 bits]
+                    rb = -self.ra + self.imm
+                elif self.func == 2:  # AND   [sign extend imm to 64 bits]
+                    rb = self.ra & self.imm
+                elif self.func == 3:  # CAND  [sign extend imm to 64 bits]
+                    rb = ~self.ra & self.imm
+                elif self.func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.ra | self.imm
+                elif self.func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ~self.ra | self.imm
+                elif self.func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.ra ^ self.imm
+                elif self.func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.imm
+                elif self.func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (self.ra == self.imm)
+                elif self.func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (self.ra != self.imm)
+                elif self.func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rb = (self.ra < self.imm)
+                elif self.func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rb = (self.ra > self.imm)
+                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (self.ra < self.imm)
+                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (self.ra > self.imm)
+                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = min(self.ra, self.imm)
+                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = max(self.ra, self.imm)
 
 
             elif opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12 
-                if func == 0:  # ADD   [sign extend imm to 64 bits]
-                    rb = ra + imm
-                elif func == 1:  # NADD  [sign extend imm to 64 bits]
-                    rb = -ra + imm
-                elif func == 2:  # AND   [sign extend imm to 64 bits]
-                    rb = ra & imm
-                elif func == 3:  # CAND  [sign extend imm to 64 bits]
-                    rb = ~ra & imm
-                elif func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra | imm
-                elif func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~ra | imm
-                elif func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ra ^ imm
-                elif func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = imm
-                elif func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra == imm)
-                elif func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (ra != imm)
-                elif func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra < imm)
-                elif func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (ra > imm)
-                elif func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra < imm)
-                elif func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (ra > imm)
-                elif func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(ra, imm)
-                elif func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(ra, imm)
+                if self.func == 0:  # ADD   [sign extend imm to 64 bits]
+                    rb = self.ra + self.imm
+                elif self.func == 1:  # NADD  [sign extend imm to 64 bits]
+                    rb = -self.ra + self.imm
+                elif self.func == 2:  # AND   [sign extend imm to 64 bits]
+                    rb = self.ra & self.imm
+                elif self.func == 3:  # CAND  [sign extend imm to 64 bits]
+                    rb = ~self.ra & self.imm
+                elif self.func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.ra | self.imm
+                elif self.func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ~self.ra | self.imm
+                elif self.func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.ra ^ self.imm
+                elif self.func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.imm
+                elif self.func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (self.ra == self.imm)
+                elif self.func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = (self.ra != self.imm)
+                elif self.func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rb = (self.ra < self.imm)
+                elif self.func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    rb = (self.ra > self.imm)
+                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (self.ra < self.imm)
+                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    rb = (self.ra > self.imm)
+                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = min(self.ra, self.imm)
+                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    rb = max(self.ra, self.imm)
 
 
             # function for Creating unsigned number
@@ -822,7 +827,8 @@ class Instruction(Addressable):
                     sim.regfile.set(self.rdi,
                                     sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
                 elif self.func == 5:
-                    sim.regfile.set(self.rdi, -sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
+                    sim.regfile.set(self.rdi,
+                                    -sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
         elif opcode in Instruction.sections[6]:
             # for opcode 42 FPU1
             if opcode == 42:

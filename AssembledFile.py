@@ -40,6 +40,9 @@ class AssembledFile:
         for i in range(len(asmlines)):
             line = asmlines[i].split('//')[0].strip()  # discard comments
 
+            if not line:
+                continue
+
             # parsing
             segmentDirective_match = re.search("|".join(self.directiveSegments.keys()), line)
             directive_match = re.search(r'\.[a-zA-z][a-zA-z\d_]+', line)
@@ -50,8 +53,10 @@ class AssembledFile:
                 if line in self.symbolTable:
                     raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
 
+                line = '\n'.join(line.split(' ')[1:]).strip()  # removing the part with the label
                 self.symbolTable[label_match.group().strip()] = Addressable(size=0,
-                                                                            lineStr=line)  # store the address of the label as an Addressable with size=0
+                                                                            lineStr=i_counter << 3,
+                                                                            alignment=3)  # store the address of the label as an Addressable with size=0
 
             # update current segment
             elif line and directive_match and line in self.directiveSegments:
@@ -68,12 +73,13 @@ class AssembledFile:
 
             elif line and currentSegment == ".text" and not directive_match:  # .text cannot be in the same line as an instruction
                 # instruction
-                instr = Instruction(line)
+                instr = Instruction(line, symbolTable=self.symbolTable)
 
                 print('{0} => {1} => x"{2}",\n'.format(str(i), str(instr), instr.hex()))
                 self.hex.append(instr.hex())
 
                 self.directiveSegments[currentSegment] += [instr]
+                i_counter += 1
 
             print('{}:\t"{}"'
                   '\n\tsegment: {}'
@@ -83,6 +89,9 @@ class AssembledFile:
                                            reGroup(label_match)))
 
             # TODO: increment current line and current address
+
+        for instr in self.directiveSegments.get('.text'):
+            instr.calcLabelOffset()
 
         print("Successfully assembled file:", self)
 
@@ -96,5 +105,3 @@ def extractDirective(lineStr: str):
     :return: (directive, directiveArgs) """
     match = re.search(r'\.[a-zA-z][a-zA-z\d_]+', lineStr)
     return match if not match else match.group()
-
-

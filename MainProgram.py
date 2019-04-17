@@ -191,7 +191,7 @@ def makeGUI(text):
 # argument parsing
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--file', default="", nargs='?', type=argparse.FileType('r'), help='path to the file program file (optional)')
+parser.add_argument('-f', '--file', nargs='?', type=argparse.FileType('r'), help='path to the file program file (optional)')
 parser.add_argument('-i', '--asm', type=str, default="",
                     help="Assembly instruction(s) to assemble (separate with ';' as new line)")
 parser.add_argument('-t', '--text', default=False, action="store_true", help='Text mode')  # text mode

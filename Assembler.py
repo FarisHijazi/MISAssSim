@@ -4,8 +4,7 @@ Conventions to agree on:
 """
 
 from tkinter import *
-from Addressable import Instruction
-from AssembledFile import AssembledFile
+# from AssembledFile import AssembledFile
 import re
 
 # from tkFileDialog import *
@@ -393,9 +392,9 @@ def asmtoint3(d):
     # setting the register indexes
     d.rai = reg(d.ra)
     d.rbi = reg(d.rb)
-    if hasattr(d, 'rc'):
+    if d.rc is not None:
         d.rci = reg(d.rc)
-    if hasattr(d, 'rd'):
+    if d.rd is not None:
         d.rdi = reg(d.rd)
 
     # return ra, d.rbi, rc, d.rdi, s, d.func, d.imm
@@ -561,7 +560,6 @@ def asmtointFPU1(d):
     d.rdi = reg(d.args[1])
     d.rai = reg(d.args[2])
     d.p, d.func = fpu1_dict[d.op]
-
 
 # d.opcode, d.ra, d.rbi, d.rd, d.func, d.p
 def asmtointFPU2(d):
@@ -754,11 +752,12 @@ def asmtointNOP(d):
 def asmtoint(asm):
     from Addressable import Instruction
     if isinstance(asm, str):
+        print("WARNING: Be careful, you just passed a string to asmtoint, you should pass an Instruction")
         return decodeInstruction(Instruction(asm))
-    return decodeInstruction(asm)
+    return decodeInstruction(asm)  # asm is actually an Instruction
 
 
-def decodeInstruction(d: Instruction):
+def decodeInstruction(d):
     # Section 6 FPU1
     if d.op in fpu1_dict:
         if len(d.args) != 3:
@@ -891,7 +890,7 @@ def decodeInstruction(d: Instruction):
             asmtoint5(d)
     else:
         print("Returning all zeroes since the instruction is not recognized")
-        return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        return d  # this is the default/NOP case
     # opcode 41
     # This is not elif statement because it shares instruction names with previous elif statements
     if d.op in opcodes.get('alu'):
@@ -905,7 +904,7 @@ def decodeInstruction(d: Instruction):
 def asmtointALU(d):
     """
     Note that func and n both share the same variable func
-    :param d.args:
+    :param args:
     :return: (opcode, ra, rbi, func, x, rd)
     """
     d.opcode = 40
@@ -969,19 +968,20 @@ def decodeToHex(asm):
     string line to hex string
     """
     d = asmtoint(asm)
-    print(asm + " -> " + str(d))
-    hex = inttohex(d)
-    return hex
+    print(str(asm) + " -> " + str(d))
+    return inttohex(d)
 
 
-def reg(neumonic: str):
+def reg(mnemonic: str):
     """
     given the neumonic (example: $0, $zero, $r1, $v0, etc...)
-    :param neumonic:
+    :param mnemonic:
     :return: register number
     """
+    if type(mnemonic) is not str:
+        raise Exception("mnemonic must be a string:", mnemonic)
 
-    # (key: neumonic, value: registerNumber)
+    # (key: mnemonic, value: registerNumber)
     registerAliasDict = {
         '$zero': 0b00000,
         '$at': 0b00001,
@@ -1017,8 +1017,8 @@ def reg(neumonic: str):
         '$ra': 0b11111,
     }
 
-    if len(neumonic) == 2:
-        return int(neumonic[1:])
+    if len(mnemonic) == 2:
+        return int(mnemonic[1:])
     else:
-        if neumonic in registerAliasDict:
-            return registerAliasDict.get(neumonic, 0)
+        if mnemonic in registerAliasDict:
+            return registerAliasDict.get(mnemonic, 0)

@@ -1,6 +1,6 @@
 
 .data
-@array  .word64 1,2,3,4
+@array  .dword 1,2,3,4
 
 .text
 add r0 = r1, r2, r1

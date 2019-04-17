@@ -810,6 +810,12 @@ class Instruction(Addressable):
                 elif self.func == 15:
                     sim.regfile.set(self.rdi, max(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
                                                   sim.regfile.get(self.rci)))
+                #Due to the logical operations rdi may have a boolean (True/False) ---> Must set it to (1/0)
+                if sim.regfile.get(self.rdi) == True:
+                    sim.regfile.set(self.rdi,1)
+                elif sim.regfile.get(self.rdi) == False:
+                    sim.regfile.set(self.rdi,0)
+                
             elif self.x == 2:
                 if self.func == 0:
                     sim.regfile.set(self.rdi,

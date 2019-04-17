@@ -14,8 +14,8 @@ from AssembledFile import AssembledFile
 import sys
 from time import time
 
-sys.path.append("appJar/")
 from appjar import gui
+
 
 
 class Simulator:
@@ -43,58 +43,68 @@ class Simulator:
             return
         next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
         self.executeInstruction(next_instruction)
+        print('step() Run instr: "{0}"\nRegFile: {1}'.format(str(next_instruction), str(self.regfile)))
         self.pc += 1
-        self.redisplayReg()
-        self.redisplayMem()
+
+        if self.gui:
+            self.redisplayReg()
+            self.redisplayMem()
 
 
     def runAll(self):
+        print("runAll()")
         if self.assembledFile is None:
             raise Exception("no assembled file, must compile")
         else:
-            for x in self.assembledFile.directiveSegments.get('.text', []):
-                instr = instr = self.assembledFile.directiveSegments.get('.text', [])[self.currentInst]
-                self.executeInstruction(instr)
-                print("Step(), instr: " + str(instr) + "\nRegFile: " + str(self.regfile.__regs__))
-                self.currentInst += 1
+            instructions = self.assembledFile.directiveSegments.get('.text', [])
+            for instr in instructions:
+                if self.pc < len(instructions):
+                    self.executeInstruction(instr)
+                    print('Running instr: "{0}"\nRegFile: {1}'.format(str(instr), str(self.regfile)))
+                    self.pc += 1
+
             self.redisplayReg()
             self.redisplayMem()
 
 
     def redisplayReg(self):
         if self.gui is None:
-            raise Exception("No gui object")
-        self.gui.setLabel("Registers", "R0 = " + str(self.regfile.get(0)) + "     \nR1 = " + str(
-            self.regfile.get(1)) + "   \nR2 = " + str(self.regfile.get(2)) +
-                          "\nR3 = " + str(self.regfile.get(3)) + " \nR4 = " + str(
-            self.regfile.get(4)) + "      \nR5 = " + str(self.regfile.get(5)) +
-                          "\nR6 = " + str(self.regfile.get(6)) + " \nR7 = " + str(
-            self.regfile.get(7)) + "      \nR8 = " + str(self.regfile.get(8)) +
-                          "\nR9 = " + str(self.regfile.get(9)) + " \nR10 = " + str(self.regfile.get(10)))
-        self.gui.setLabel("Registers1", "R11 = " + str(self.regfile.get(11)) + "     \nR12 = " + str(
-            self.regfile.get(12)) + "   \nR13 = " + str(self.regfile.get(13)) +
-                          "\nR14 = " + str(self.regfile.get(14)) + " \nR15 = " + str(
-            self.regfile.get(15)) + "      \nR16 = " + str(self.regfile.get(16)) +
-                          "\nR17 = " + str(self.regfile.get(17)) + " \nR18 = " + str(
-            self.regfile.get(18)) + "      \nR19 = " + str(self.regfile.get(19)) +
-                          "\nR18 = " + str(self.regfile.get(20)) + " \nR21 = " + str(self.regfile.get(21)))
-        self.gui.setLabel("Registers2", "R22 = " + str(self.regfile.get(22)) + "     \nR23 = " + str(
-            self.regfile.get(23)) + "   \nR24 = " + str(self.regfile.get(24)) +
-                          "\nR25 = " + str(self.regfile.get(25)) + " \nR26 = " + str(
-            self.regfile.get(26)) + "      \nR27 = " + str(self.regfile.get(17)) +
-                          "\nR28 = " + str(self.regfile.get(28)) + " \nR29 = " + str(
-            self.regfile.get(29)) + "      \nR30 = " + str(self.regfile.get(30)) + "\nR31 = " + str(
-            sim.regfile.get(31)))
+            # raise Exception("No gui object")
+            print("Register content:".format(self.regfile))
+        else:
+            self.gui.setLabel("Registers", "R0 = " + str(self.regfile.get(0)) + "     \nR1 = " + str(
+                self.regfile.get(1)) + "   \nR2 = " + str(self.regfile.get(2)) +
+                              "\nR3 = " + str(self.regfile.get(3)) + " \nR4 = " + str(
+                self.regfile.get(4)) + "      \nR5 = " + str(self.regfile.get(5)) +
+                              "\nR6 = " + str(self.regfile.get(6)) + " \nR7 = " + str(
+                self.regfile.get(7)) + "      \nR8 = " + str(self.regfile.get(8)) +
+                              "\nR9 = " + str(self.regfile.get(9)) + " \nR10 = " + str(self.regfile.get(10)))
+            self.gui.setLabel("Registers1", "R11 = " + str(self.regfile.get(11)) + "     \nR12 = " + str(
+                self.regfile.get(12)) + "   \nR13 = " + str(self.regfile.get(13)) +
+                              "\nR14 = " + str(self.regfile.get(14)) + " \nR15 = " + str(
+                self.regfile.get(15)) + "      \nR16 = " + str(self.regfile.get(16)) +
+                              "\nR17 = " + str(self.regfile.get(17)) + " \nR18 = " + str(
+                self.regfile.get(18)) + "      \nR19 = " + str(self.regfile.get(19)) +
+                              "\nR18 = " + str(self.regfile.get(20)) + " \nR21 = " + str(self.regfile.get(21)))
+            self.gui.setLabel("Registers2", "R22 = " + str(self.regfile.get(22)) + "     \nR23 = " + str(
+                self.regfile.get(23)) + "   \nR24 = " + str(self.regfile.get(24)) +
+                              "\nR25 = " + str(self.regfile.get(25)) + " \nR26 = " + str(
+                self.regfile.get(26)) + "      \nR27 = " + str(self.regfile.get(17)) +
+                              "\nR28 = " + str(self.regfile.get(28)) + " \nR29 = " + str(
+                self.regfile.get(29)) + "      \nR30 = " + str(self.regfile.get(30)) + "\nR31 = " + str(
+                sim.regfile.get(31)))
 
 
     def redisplayMem(self):
+        if self.gui is None:
+            print('Memory content:'.format(self.mem))
         # This is a naaive way it can be optimized, no time
         self.gui.openScrollPane("memPane")
-        index = 0
-        for x in sim.mem.theBytes:
-            name = str(index) + "c1"
-            self.gui.setLabel(name, sim.mem.theBytes[index])
-            index += 1
+
+        for i in range(len(sim.mem.theBytes)):
+            name = str(i) + "c1"
+            self.gui.setLabel(name, sim.mem.theBytes[i])
+
         self.gui.stopScrollPane()
 
     class Regfile:
@@ -110,38 +120,58 @@ class Simulator:
         }
 
 
-        def __init__(self, initStr: str):
-            """ :param initStr: decides the type of regfile to make. either one of: "gp", "e", "c", "fp" """
+        def __init__(self, name: str):
+            """ :param name: decides the type of __regs__ to make. either one of: "gp", "e", "c", "fp" """
             # if someString in initializer:
-            length, names, representations = Simulator.Regfile.initializer.get(initStr)
+
+            length, names, representations = Simulator.Regfile.initializer.get(name)
+
+            self.name = name
 
             self.names = names
-            self.regfile = [0] * length
+            self.__regs__ = [0] * length
             self.representations = representations
 
-            print("regfile:", self.regfile)
+            self.__regs__[1] = 1
+            print("__regs__:", self.__regs__)
+
+
+        def __setitem__(self, key, value):
+            self.set(key, value)
+
+
+        def __getitem__(self, key):
+            return self.get(key)
 
 
         def set(self, index, newVal, instruction: Instruction = None):
             if type(index) is str:  # this line allows for indexing by reg names (as strings)
                 index = self.names.index(index)
 
-            print("setting reg {}: {} -> {}".format(index, self.regfile[index], newVal))
-            self.regfile[index] = newVal
+            print("setting reg {}: {} -> {}".format(index, self.__regs__[index], newVal))
+            self.__regs__[index] = newVal
 
 
         def get(self, regIndex: int):
-            return self.regfile[regIndex]
+            return self.__regs__[regIndex]
+
+
+        def __str__(self):
+            return "{} register file:\n\t{}".format(self.name, "\n\t".join(map(str, zip(self.names, self.__regs__))))
 
     class Mem:
         def __init__(self):
-            self.theBytes = ["00000000"] * 256
+            self.theBytes = ["00000000"] * 32
 
 
         def write(self, address, byteElements):
             for b in byteElements:
                 self.theBytes[address] = b
                 address += 1
+
+
+        def __str__(self):
+            return "Memory:\n\t{}".format("\n\t".join(map(str, zip(range(len(self.theBytes)), self.theBytes))))
 
     def executeInstruction(self, instruction: Instruction):
         instruction.execute(self)
@@ -161,14 +191,20 @@ def compileASM(asm_text):
     hexfile.seek(0)
     hexfile.truncate()
     hexfile.write(assembledFile.hex.encode('utf-8'))
-    print(assembledFile.hex)
     hexfile.close()
+    print(assembledFile.hex)
 
     print("AssembledFile:" + assembledFile.text)
     return assembledFile
 
 
 def makeGUI():
+    app = gui("M-Architecture Simulation ", "800x675")
+    app.setSticky("news")
+    app.setExpand("both")
+    app.setFont(14)
+
+
     def redisplayReg():
         app.setLabel("Registers",
                      "R0 = " + str(sim.regfile.get(0)) + "     \nR1 = " + str(sim.regfile.get(1)) + "   \nR2 = " + str(
@@ -259,14 +295,6 @@ def makeGUI():
 
     def menuPress(name):
         print("Hello")
-        if (name == "Open"):
-            print("Open")
-        elif (name == "Close"):
-            app.stop()
-
-
-    def menuPress(name):
-        print("Hello")
         if name == "Open":
             print("Open")
         elif name == "Close":
@@ -349,9 +377,10 @@ def makeGUI():
 
 # argument parsing
 parser = ArgumentParser()
-parser.add_argument('--file', type=str, default="", help='path to the file program file (optional)')
-parser.add_argument('--asm', type=str, default="", help='instruction to assemble')
-parser.add_argument('-r', default=False, action="store_true", help='run after assembling')
+parser.add_argument('-f', '--file', type=str, default="", help='path to the file program file (optional)')
+parser.add_argument('-i', '--asm', type=str, default="", help="Assembly instruction(s) to assemble (separate with ';' as new line)")
+parser.add_argument('-t', '--text', default=False, action="store_true", help='Text mode')  # text mode
+parser.add_argument('-r', '--run', default=False, action="store_true", help='run after assembling')
 cmd_args = parser.parse_args()
 
 file = cmd_args.file
@@ -365,15 +394,59 @@ if file and os.path.isfile(file):
 
     sim.init(_assembledFile)
 
-    if cmd_args.r and _assembledFile:
+    if cmd_args.run and _assembledFile:
         sim.init(_assembledFile)
-        sim.step()
-elif cmd_args.asm:
-    _assembledFile = compileASM(cmd_args.asm)
+        sim.runAll()
+elif cmd_args.text:
+    accumulatedInput = ""
 
-    if cmd_args.r and _assembledFile:
+    def runAll():
+        _assembledFile = compileASM(accumulatedInput)
         sim.init(_assembledFile)
-        sim.step()
+        sim.runAll()
+
+    def compile():
+        _assembledFile = compileASM(accumulatedInput)
+        sim.init(_assembledFile)
+
+
+    'name: (description:str, mnemonics:List[str], func)'
+    commands = dict(
+        run=dict(description="compile and run everything", cmd=['r', 'run'], func=runAll),
+        compile=dict(description="compile", cmd=['c', 'compile'], func=compile),
+        step=dict(description='execute only the next line', cmd=['p', 'step'], func=sim.step),
+        exit=dict(description='exit the program', cmd=['q', 'quit', 'exit', 'x'], func=exit)
+    )
+    print("Text mode: Write your program or load it from a file")
+    print("use '$' followed by a command:\n\t{}\n\n".format(
+        "\t\n".join(map(lambda k: '"{}" {}:   {}'.format(
+            k, commands[k].get('cmd'), commands[k].get('description')), commands.keys()))
+    ))
+
+    i = 1
+    while True:
+        ipt = input("{}:... ".format(i))
+        # check if command:
+        if ipt and ipt[0] == '$':
+            for command in commands:
+                if ipt[1:] in commands.get(command).get('cmd'):
+                    commands[command].get('func')()
+
+        else:
+            accumulatedInput += ipt + '\n'
+            i += 1
+
+# if assembly text was passed (separate with ';')'
+elif cmd_args.asm:
+    instructions = cmd_args.asm.split(';')
+    print("instructions:", instructions)
+    asm = "\n".join(instructions)
+
+    _assembledFile = compileASM(asm)
+
+    if cmd_args.run and _assembledFile:
+        sim.init(_assembledFile)
+        sim.runAll()
 else:
     Tk().withdraw()
     frame = makeGUI()

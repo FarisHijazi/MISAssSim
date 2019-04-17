@@ -14,30 +14,35 @@ from argparse import ArgumentParser
 import sys
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
-filename = "Untitled"
+# TODO: fix issue: the dictionaries, sometimes imm='r0' or wtver, BIG PROBLEM! test mul for an example
+
+outfile = "Untitled"
 fileexists = False
 symbolTable = {}
 global currentLine
 
-# func, imm_L, (imm_R  OR  p), imm
+# opcode 37 op:(func, imm_L, (imm_R|p), imm)
 sec4_SHIFT_dict = {
     "shlr": (0, 'i3', 'i4', None),
     "shlr": (1, 'i3', 'i4', None),
     "salr": (2, 'i3', 'i4', None),
     "ror": (3, None, 'i3', None),
     "mul": (8, None, None, 'i3'),
-    "div": (12, None, None, 'i3'),
-    "mod": (13, None, None, 'i3'),
-    "divu": (14, None, None, 'i3'),
-    "modu": (15, None, None, 'i3'),
+    "div": (12, None, None, 'i2'),
+    "mod": (13, None, None, 'i2'),
+    "divu": (14, None, None, 'i2'),
+    "modu": (15, None, None, 'i2'),
+    # pseudo
     "shl": (0, 'i3', None, None),
     "shr": (0, None, 'i3', None),
     "sar": (2, None, 'i3', None),
     "rol": (3, None, 'i3', None),
+    # extract and extend pseudo
     "extr": (2, 'i3', 'i4', None),
     "extru": (0, 'i3', 'i4', None),
     "ext": (2, 'i3', None, None),
     "extu": (0, 'i3', None, None),
+
     "insz": (2, 'i3', 'i4', None),
 }
 """
@@ -170,6 +175,7 @@ opcodes = {
     }
 }
 
+# (p, func)
 fpu1_dict = {
     "abs.s": (0, 0),
     "abs.d": (1, 0),
@@ -186,6 +192,27 @@ fpu1_dict = {
     "rint.s": (0, 7),
     "rint.d": (1, 7),
 }
+
+# (func, imm)
+sec4_RET_dict = {
+    "retadd": (0, 'i3'),
+    "retnadd": (1, 'i3'),
+    "retand": (2, 'i3'),
+    "retcand": (3, 'i3'),
+    "retor": (4, 'i3'),
+    "retcor": (5, 'i3'),
+    "retxor": (6, 'i3'),
+    "retset": (7, 'i3'),
+    "reteq": (8, 'i3'),
+    "retne": (9, 'i3'),
+    "retlt": (10, 'i3'),
+    "retge": (11, 'i3'),
+    "retltu": (12, 'i3'),
+    "retgeu": (13, 'i3'),
+    "retmin": (14, 'i3'),
+    "retmax": (15, 'i3'),
+}
+
 # neumonic: (p, func, swap_ra_rb)
 fpu2_dict = {
     "eq.s": (0, 0, False),
@@ -301,23 +328,75 @@ sec5_dict = {
     "madd": (2, 4),
     "nmadd": (2, 5)
 }
-ret_dict = {
-    "retadd": 0,
-    "retnadd": 1,
-    "retand": 2,
-    "retcand": 3,
-    "retor": 4,
-    "retcor": 5,
-    "retxor": 6,
-    "retset": 7,
-    "reteq": 8,
-    "retne": 9,
-    "retlt": 0,
-    "retge": 1,
-    "retltu": 2,
-    "retgeu": 3,
-    "retmin": 4,
-    "retmax": 5,
+
+# func, x, n, swap
+# FIXME: all values with None are place holders, THEY MUST BE REPLACED
+sec4_ALU_dict = {
+    "add": (0, 0, None, False),
+    "nadd": (1, 0, None, False),
+    "and": (2, 0, None, False),
+    "cand": (3, 0, None, False),
+    "or": (4, 0, None, False),
+    "cor": (5, 0, None, False),
+    "xor": (6, 0, None, False),
+    "xnor": (7, 0, None, False),
+    "eq": (8, 0, None, False),
+    "ne": (9, 0, None, False),
+    "lt": (10, 0, None, False),
+    "ge": (11, 0, None, False),
+    "ltu": (12, 0, None, False),
+    "geu": (13, 0, None, False),
+    "min": (14, 0, None, False),
+    "max": (15, 0, None, False),
+    "shl": (0, 0, None, False),
+    "shr": (1, 1, None, False),
+    "sar": (2, 1, None, False),
+    "ror": (3, 1, None, False),
+    "mul": (8, 1, None, False),
+    "div": (12, 1, None, False),
+    "mod": (13, 1, None, False),
+    "divu": (14, 1, None, False),
+    "modu": (15, 1, None, False),
+    "adds": (None, 2, 'i4', False),
+    "nadds": (None, 3, 'i4', False),
+    "sub": (1, 0, None, True),
+    "andc": (1, 0, None, True),
+    "orc": (1, 0, None, True),
+    "gt": (1, 0, None, True),
+    "le": (1, 0, None, True),
+    "gtu": (1, 0, None, True),
+    "leu": (1, 0, None, True),
+}
+
+# : (opcode, d.func, imm)
+sec4_ALUI_dict = {
+    "add": (32, 0, 'i3'),
+    "nadd": (32, 1, 'i3'),
+    "and": (32, 2, 'i3'),
+    "cand": (32, 3, 'i3'),
+    "or": (33, 4, 'i3'),
+    "cor": (33, 5, 'i3'),
+    "xor": (33, 6, 'i3'),
+    "set": (33, 7, 'i2'),
+    "eq": (34, 8, 'i3'),
+    "ne": (34, 9, 'i3'),
+    "lt": (34, 10, 'i3'),
+    "ge": (34, 11, 'i3'),
+    "ltu": (35, 12, 'i3'),
+    "geu": (35, 13, 'i3'),
+    "min": (35, 14, 'i3'),
+    "max": (35, 15, 'i3'),
+    "sub": (32, 0, 'i3'),
+    "andc": (32, 0, 'i3'),
+    "orc": (33, 4, 'i3'),
+    "xnor": (33, 6, 'i3'),
+    "mov": (33, 4, 0),
+    "neg": (32, 1, 0),
+    "not": (33, 5, 0),
+    "gt": (32, 0, 'i3'),
+    "le": (32, 0, 'i3'),
+    "gtu": (33, 4, 'i3'),
+    "leu": (33, 4, 'i3'),
 }
 
 
@@ -331,7 +410,7 @@ def asmtointsection2(d):
             d.imm = 1
         return d.rai, d.rbi, d.imm
     # Pseudo-Bd.rainches
-    if d.op in {'ble': 10, 'bgt': 11, 'bleu': 13, 'bgtu': 12, }:
+    if d.op in {'ble': 10, 'bgt': 11, 'bgtu': 12, 'bleu': 13, }:
         d.rai = reg(d.args[1])
         d.imm = int(d.args[2]) + 1
         return d.rai, d.rbi, d.imm
@@ -408,38 +487,7 @@ def asmtointALUI(d):
     d.rbi = int(d.b)
     d.rai = int(d.a)
 
-    # : (opcode, d.func, imm)
-    sec4_ALUI_dict = {
-        "add": (32, 0, int(d.args[3])),
-        "nadd": (32, 1, int(d.args[3])),
-        "and": (32, 2, int(d.args[3])),
-        "cand": (32, 3, int(d.args[3])),
-        "or": (33, 4, int(d.args[3])),
-        "cor": (33, 5, int(d.args[3])),
-        "xor": (33, 6, int(d.args[3])),
-        "set": (33, 7, int(d.args[2])),
-        "eq": (34, 8, int(d.args[3])),
-        "ne": (34, 9, int(d.args[3])),
-        "lt": (34, 10, int(d.args[3])),
-        "ge": (34, 11, int(d.args[3])),
-        "ltu": (35, 12, int(d.args[3])),
-        "geu": (35, 13, int(d.args[3])),
-        "min": (35, 14, int(d.args[3])),
-        "max": (35, 15, int(d.args[3])),
-        "sub": (32, 0, - int(d.args[3])),
-        "andc": (32, 0, ~ int(d.args[3])),
-        "orc": (33, 4, ~ int(d.args[3])),
-        "xnor": (33, 6, ~ int(d.args[3])),
-        "mov": (33, 4, 0),
-        "neg": (32, 1, 0),
-        "not": (33, 5, 0),
-        "gt": (32, 0, 1 + int(d.args[3])),
-        "le": (32, 0, 1 + int(d.args[3])),
-        "gtu": (33, 4, 1 + int(d.args[3])),
-        "leu": (33, 4, 1 + int(d.args[3])),
-    }
-
-    d.opcode, d.func, d.imm = sec4_ALUI_dict[d.op]
+    d.opcode, d.func, d.imm = translatedDictArgs(d, sec4_ALUI_dict[d.op])
     # return opcode, ra, d.rbi, func, imm
 
 
@@ -453,27 +501,37 @@ def asmtointRET(d):
     d.rai = reg(d.ra)
     d.rbi = reg(d.rb)
 
-    # opcode, func, imm
-    sec4_RET_dict = {
-        "retadd": (0, 0, int(d.args[3])),
-        "retnadd": (1, 0, int(d.args[3])),
-        "retand": (2, 1, int(d.args[3])),
-        "retcand": (3, 1, int(d.args[3])),
-        "retor": (4, 2, int(d.args[3])),
-        "retcor": (5, 2, int(d.args[3])),
-        "retxor": (6, 4, int(d.args[3])),
-        "retset": (7, 4, int(d.args[2])),
-        "reteq": (8, 5, int(d.args[3])),
-        "retne": (9, 5, int(d.args[3])),
-        "retlt": (10, 6, int(d.args[3])),
-        "retge": (11, 6, int(d.args[3])),
-        "retltu": (12, 7, int(d.args[3])),
-        "retgeu": (13, 7, int(d.args[3])),
-        "retmin": (14, 7, int(d.args[3])),
-        "retmax": (15, 7, int(d.args[3])),
-    }
+    d.func, d.imm = translatedDictArgs(d, sec4_RET_dict[d.op])
 
-    d.func, d.imm = sec4_RET_dict[d.op]
+
+# TODO: test this
+def translatedDictArgs(instr, tup: tuple):
+    """
+    returns the translate version of tup, but translate, example:
+        (13, 'r2', 'i3', 'n'), returns (13, reg(instr.args[2]), instr.args[3], instr.n)
+    :param instr:
+    :param tup: the tuple to translate
+    :return: a translated tuple, (maps 'i3' to args[3], ... etc)
+    """
+    l = list(tup)
+    for i in range(len(l)):
+        if type(l[i]) is str:
+            match = re.search(r'^(\w+)(\d+)$'.lower(), l[i], re.IGNORECASE)
+            if match and match.groups() and len(match.groups()):
+                word = match.groups()[0]
+                number = match.groups()[1]
+                print("word={}, number={}".format(word, number))
+
+                if word in ['i', 'args']:
+                    l[i] = instr.args[int(number)]
+                    if word == 'i':
+                        l[i] = int(l[i])
+                elif word == ['r']:  # if reg
+                    l[i] = reg(l[i])
+                elif hasattr(instr, l[i]):  # any property
+                    l[i] = getattr(instr, l[i])
+
+    return tuple(l)
 
 
 # d.opcode, d.ra, d.rbi, d.func, d.imm_L, d.imm_R, d.imm
@@ -485,64 +543,18 @@ def asmtointSHIFT(d):
     d.rbi = reg(d.rb)
     d.rai = reg(d.ra)
 
-    d.func, d.imm_L, d.imm_R, d.imm = sec4_SHIFT_dict[d.op]
-    map = {
-        'i3': d.args[3],
-        'i4': d.args[4]
-    }
-    d.imm_L = map.get(d.imm_L, None)
-    d.imm_R = map.get(d.imm_R, None)
-    # int(d.args[3])
-    # imm_R has the same position as p
+    d.func, d.imm_L, d.imm_R, d.imm = translatedDictArgs(d, sec4_SHIFT_dict[d.op])
 
 
 # d.opcode, d.ra, d.rbi, d.func, x, d.rd
 def asmtointALU(d):
-    # func, x, n, swap
-    sec4_ALU_dict = {
-        "add": (0, 0, -1, False),
-        "nadd": (1, 0, -1, False),
-        "and": (2, 0, -1, False),
-        "cand": (3, 0, -1, False),
-        "or": (4, 0, -1, False),
-        "cor": (5, 0, -1, False),
-        "xor": (6, 0, -1, False),
-        "xnor": (7, 0, -1, False),
-        "eq": (8, 0, -1, False),
-        "ne": (9, 0, -1, False),
-        "lt": (10, 0, -1, False),
-        "ge": (11, 0, -1, False),
-        "ltu": (12, 0, -1, False),
-        "geu": (13, 0, -1, False),
-        "min": (14, 0, -1, False),
-        "max": (15, 0, -1, False),
-        "shl": (0, 0, -1, False),
-        "shr": (1, 1, -1, False),
-        "sar": (2, 1, -1, False),
-        "ror": (3, 1, -1, False),
-        "mul": (8, 1, -1, False),
-        "div": (12, 1, -1, False),
-        "mod": (13, 1, -1, False),
-        "divu": (14, 1, -1, False),
-        "modu": (15, 1, -1, False),
-        "adds": (-1, 2, reg(d.args[4]), False),
-        "nadds": (-1, 3, reg(d.args[4]), False),
-        "sub": (1, 0, -1, True),
-        "andc": (1, 0, -1, True),
-        "orc": (1, 0, -1, True),
-        "gt": (1, 0, -1, True),
-        "le": (1, 0, -1, True),
-        "gtu": (1, 0, -1, True),
-        "leu": (1, 0, -1, True),
-    }
-
     d.opcode = 40
 
     d.rd = d.args[1]
     d.ra = d.args[2]
     d.rb = d.args[3]
 
-    d.func, d.x, d.n, swap = sec4_ALU_dict[d.op]
+    d.func, d.x, d.n, swap = translatedDictArgs(d, sec4_ALU_dict[d.op])
     if swap:
         d.ra, d.rb = d.rb, d.ra
     # swapping must be done before the registers are translated
@@ -551,7 +563,65 @@ def asmtointALU(d):
     d.rai = reg(d.ra)
     d.rbi = reg(d.rb)
 
-    # return d.opcode, ra, rb, func, n, x, rdi
+
+# def asmtointALU(d):
+#     """
+#     Note that func and n both share the same variable func
+#     :param args:
+#     :return: (opcode, ra, rbi, func, x, rd)
+#     """
+#     d.opcode = 40
+#     d.rdi = reg(d.args[1])
+#     d.rai = reg(d.args[2])
+#     d.rbi = reg(d.args[3])
+#
+#     # (func, x, n)
+#     opcode40_dict = {
+#         "add": (0, 0),
+#         "nadd": (1, 0),
+#         "and": (2, 0),
+#         "cand": (3, 0),
+#         "or": (4, 0),
+#         "cor": (5, 0),
+#         "xor": (6, 0),
+#         "xnor": (7, 0),
+#         "eq": (8, 0),
+#         "ne": (9, 0),
+#         "lt": (10, 0),
+#         "ge": (11, 0),
+#         "ltu": (12, 0),
+#         "geu": (13, 0),
+#         "min": (14, 0),
+#         "max": (15, 0),
+#         "shl": (0, 1),
+#         "shr": (1, 1),
+#         "sar": (2, 1),
+#         "ror": (3, 1),
+#         "mul": (8, 1),
+#         "div": (12, 1),
+#         "mod": (13, 1),
+#         "divu": (14, 1),
+#         "modu": (15, 1),
+#
+#         "adds": ("n", 2),  # n = 0 ~ 15
+#         "nadds": ("n", 2),  # n = 0 ~ 15
+#
+#         "sub": (1, 0),  # uses nadd, swaps ra & d.rbi
+#         "andc": (1, 0),  # uses cand, swaps ra & d.rbi
+#         "orc": (1, 0),  # uses cor,  swaps ra & d.rb
+#         "gt": (1, 0),  # uses lt,   swaps ra & d.rb
+#         "le": (1, 0),  # uses ge,   swaps ra & d.rb
+#         "gtu": (1, 0),  # uses ltu,  swaps ra & d.rbi
+#         "leu": (1, 0),  # uses geu,  swaps ra & d.rbi
+#     }
+#
+#     # Pseudo-Instructions for ALU
+#     if d.op in ["sub", "andc", "orc", "gt", "le", "gtu", "leu"]:  # swap
+#         d.ra, d.rbi = d.rbi, d.ra
+#
+#     d.func, d.x = opcode40_dict.get(d.op)
+#     if d.func == "n":
+#         d.func = int(d.args[2])
 
 
 # d.opcode, d.ra, d.rd, d.func, d.p =
@@ -560,6 +630,7 @@ def asmtointFPU1(d):
     d.rdi = reg(d.args[1])
     d.rai = reg(d.args[2])
     d.p, d.func = fpu1_dict[d.op]
+
 
 # d.opcode, d.ra, d.rbi, d.rd, d.func, d.p
 def asmtointFPU2(d):
@@ -623,31 +694,27 @@ def asmtoint5(d):
 
 
 def inttohex(d):
+    instruction = "0" * 32
     if d.opcode == 2 or d.opcode == 3:
-        opstr = format(d.opcode, '06b')
         offsetstr = format(d.offset, '026b')
-        instruction = opstr + offsetstr
+        instruction = format(d.opcode, '06b') + offsetstr
     # Section 2 (branch d.imm)
     elif 8 <= d.opcode <= 13:
-        opstr = format(d.opcode, '06b')
-        rastr = format(d.rai, '05b')
         immstr = format(d.imm, '05b')  # p15 states this should be Uimm5 is this the correct format???
         offsetstr = format(d.offset, '016b')
-        instruction = opstr + rastr + immstr + offsetstr
+        instruction = format(d.opcode, '06b') + format(d.rai, '05b') + immstr + offsetstr
     # JR instruction p15
     elif d.opcode == 14:
-        opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
         emptystr = format(0, '05b')
         offsetstr = format(d.offset, '016b')
-        instruction = opstr + rastr + emptystr + offsetstr
+        instruction = format(d.opcode, '06b') + rastr + emptystr + offsetstr
     # Section2 (non d.imm branch)
     elif 15 <= d.opcode <= 23:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
-        rbstr = format(d.rbi, '05b')
         offsetstr = format(d.offset, '016b')
-        instruction = opstr + rastr + rbstr + offsetstr
+        instruction = opstr + rastr + format(d.rbi, '05b') + offsetstr
         # Section 3
     elif d.opcode == 24 or d.opcode == 25:
         opstr = format(d.opcode, '06b')
@@ -663,8 +730,8 @@ def inttohex(d):
         funcstr = format(d.func, '04b')
         sstr = format(d.s, '02b')
         if d.opcode == 27:
-            rcstr = format(d.rci, '05b')
             rdstr = format(0, '05b')
+            rcstr = format(d.rci, '05b')
         else:
             rdstr = format(d.rdi, '05b')
             rcstr = format(0, '05b')
@@ -673,37 +740,30 @@ def inttohex(d):
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
         rbstr = format(d.rbi, '05b')
-        fnstr = format(d.func, '04b')
-        imstr = format(d.imm, '12b')
-        instruction = opstr + rastr + rbstr + fnstr + imstr
+        instruction = opstr + rastr + rbstr + format(d.func, '04b') + format(d.imm, '12b')
     elif d.opcode == 37:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
         rbstr = format(d.rbi, '05b')
-        fnstr = format(d.func, '04b')
-        imLstr = format(d.imm_L, '06b')
-        imRstr = format(d.imm_R, '06b')
-        imstr = format(d.imm, '12b')
         if d.imm_L is None and d.imm_R is None and d.imm is not None:
-            instruction = opstr + rastr + rbstr + fnstr + imstr
-        elif d.imm_L is not None and d.imm_R is not None and d.imm is None:
-            instruction = opstr + rastr + rbstr + fnstr + imLstr + imRstr
-        elif d.imm_L is not None and d.imm_R is None and d.imm is None:
-            instruction = opstr + rastr + rbstr + fnstr + imLstr
-        elif d.imm_L is None and d.imm_R is not None and d.imm is None:
-            instruction = opstr + rastr + rbstr + fnstr + imRstr
+            instruction = opstr + rastr + rbstr + format(d.func, '04b') + format(d.imm, '12b')
+        elif d.imm_L and d.imm_R and d.imm is None:
+            instruction = opstr + rastr + rbstr + format(d.func, '04b') + format(d.imm_L, '06b') + format(d.imm_R,
+                                                                                                          '06b')
+        elif d.imm_L and d.imm_R is None and d.imm is None:
+            instruction = opstr + rastr + rbstr + format(d.func, '04b') + format(d.imm_L, '06b')
+        elif d.imm_L is None and d.imm_R and d.imm is None:
+            instruction = opstr + rastr + rbstr + format(d.func, '04b') + format(d.imm_R, '06b')
     elif d.opcode == 40:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
         rbstr = format(d.rbi, '05b')
-        fnstr = format(d.func, '04b')
         x_str = format(d.x, '02b')
-        n_str = format(d.n, '04b')
         rdstr = format(d.imm, '05b')
-        if d.x == 0 or d.x == 1:
-            instruction = opstr + rastr + rbstr + fnstr + x_str + rdstr
-        elif d.x == 2 or d.x == 3:
-            instruction = opstr + rastr + rbstr + n_str + x_str + rdstr
+        if d.x in [0, 1]:
+            instruction = opstr + rastr + rbstr + format(d.func, '04b') + x_str + rdstr
+        elif d.x in [2, 3]:
+            instruction = opstr + rastr + rbstr + format(d.n, '04b') + x_str + rdstr
     elif d.opcode == 41:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
@@ -714,7 +774,7 @@ def inttohex(d):
         rdstr = format(d.rdi, '05b')
         instruction = opstr + rastr + rbstr + funcstr + xstr + rcstr + rdstr
         # FPU instructions
-    elif d.opcode in {42, 43, 44}:
+    elif d.opcode in [42, 43, 44]:
         opstr = format(d.opcode, '06b')
         rastr = format(d.rai, '05b')
         fnstr = format(d.func, '05b')
@@ -741,6 +801,8 @@ def inttohex(d):
             immstr = format(d.imm, '08b')
         # print opstr, rtstr, rsstr, immstr
         instruction = opstr + rastr + rbstr + immstr
+    instruction = re.sub('\s', '0',
+                         instruction)  # replacing empty spaces, empty spaces appear when the bits are reserved
     return format(int(instruction, 2), '04x')
 
 
@@ -867,17 +929,13 @@ def decodeInstruction(d):
             d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
     # Checking if it belongs to SHIFT (Opcode 37)
     # FIXME:
-    elif d.op in ["shlr", "salr", "ror", "mul", "div", "mod", "divu", "modu", "shl", "shr", "sar",
-                  "rol", "extr", "extru", "ext", "extu", "insz"]:
+    elif d.op in sec4_SHIFT_dict:
         if len(d.args) != 4:
             raise Exception('Incorrect Number of arguments')
         asmtointSHIFT(d)
 
     # Checking if it belongs to ALU (Opcode 40)
-    elif len(d.args) == 4 and d.op in ["add", "nadd", "and", "cand", "or", "cor", "xor", "xnor", "eq", "ne", "lt",
-                                       "ge", "ltu", "geu", "min", "max", "shl", "shr", "sar", "ror", "mul", "div",
-                                       "mod", "divu", "modu", "adds", "nadds", "sub", "andc", "orc", "gt", "le",
-                                       "gtu", "leu"]:
+    elif len(d.args) == 4 and d.op in sec4_ALU_dict:
         # FIXME: WHY does it have to be length 4 when adds and nadds has a length of 3?!!!
         if len(d.args) != 4 and d.op != "min" and d.op != "max":
             raise Exception('Incorrect Number of arguments')
@@ -901,68 +959,6 @@ def decodeInstruction(d):
     return d
 
 
-def asmtointALU(d):
-    """
-    Note that func and n both share the same variable func
-    :param args:
-    :return: (opcode, ra, rbi, func, x, rd)
-    """
-    d.opcode = 40
-    d.rdi = reg(d.args[1])
-    d.rai = reg(d.args[2])
-    d.rbi = reg(d.args[3])
-
-    # (func, x, n)
-    opcode40_dict = {
-        "add": (0, 0),
-        "nadd": (1, 0),
-        "and": (2, 0),
-        "cand": (3, 0),
-        "or": (4, 0),
-        "cor": (5, 0),
-        "xor": (6, 0),
-        "xnor": (7, 0),
-        "eq": (8, 0),
-        "ne": (9, 0),
-        "lt": (10, 0),
-        "ge": (11, 0),
-        "ltu": (12, 0),
-        "geu": (13, 0),
-        "min": (14, 0),
-        "max": (15, 0),
-        "shl": (0, 1),
-        "shr": (1, 1),
-        "sar": (2, 1),
-        "ror": (3, 1),
-        "mul": (8, 1),
-        "div": (12, 1),
-        "mod": (13, 1),
-        "divu": (14, 1),
-        "modu": (15, 1),
-
-        "adds": ("n", 2),  # n = 0 ~ 15
-        "nadds": ("n", 2),  # n = 0 ~ 15
-
-        "sub": (1, 0),  # uses nadd, swaps ra & d.rbi
-        "andc": (1, 0),  # uses cand, swaps ra & d.rbi
-        "orc": (1, 0),  # uses cor,  swaps ra & d.rb
-        "gt": (1, 0),  # uses lt,   swaps ra & d.rb
-        "le": (1, 0),  # uses ge,   swaps ra & d.rb
-        "gtu": (1, 0),  # uses ltu,  swaps ra & d.rbi
-        "leu": (1, 0),  # uses geu,  swaps ra & d.rbi
-    }
-
-    # Pseudo-Instructions for ALU
-    if d.op in ["sub", "andc", "orc", "gt", "le", "gtu", "leu"]:  # swap
-        d.ra, d.rbi = d.rbi, d.ra
-
-    d.func, d.x = opcode40_dict.get(d.op)
-    if d.func == "n":
-        d.func = int(d.args[2])
-
-    # return opcode, ra, d.rbi, func, x, rd
-
-
 def decodeToHex(asm):
     """
     string line to hex string
@@ -976,10 +972,11 @@ def reg(mnemonic: str):
     """
     given the neumonic (example: $0, $zero, $r1, $v0, etc...)
     :param mnemonic:
-    :return: register number
+    :return: register number, or None if doesn't exist
     """
     if type(mnemonic) is not str:
-        raise Exception("mnemonic must be a string:", mnemonic)
+        return None
+        # raise Exception("mnemonic must be a string:", mnemonic)
 
     # (key: mnemonic, value: registerNumber)
     registerAliasDict = {

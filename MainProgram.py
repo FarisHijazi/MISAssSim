@@ -98,8 +98,9 @@ class Simulator:
     def redisplayMem(self):
         if self.gui is None:
             print('Memory content:'.format(self.mem))
-        # This is a naaive way it can be optimized, no time
-        self.gui.openScrollPane("memPane")
+        else:
+            # This is a naaive way it can be optimized, no time
+            self.gui.openScrollPane("memPane")
 
         for i in range(len(sim.mem.theBytes)):
             name = str(i) + "c1"
@@ -177,7 +178,7 @@ class Simulator:
         instruction.execute(self)
 
 
-filename = "Untitled"
+outfile = "hex"
 fileexists = False
 sim = None
 
@@ -185,17 +186,55 @@ sim = None
 def compileASM(asm_text):
     assembledFile = AssembledFile(asm_text)
     # print cpu_out
-    name, ext = os.path.splitext(filename)
-    hexfilename = name + ".hex"
-    hexfile = open(hexfilename, "wb")
-    hexfile.seek(0)
-    hexfile.truncate()
-    hexfile.write(assembledFile.hex.encode('utf-8'))
-    hexfile.close()
+    name, ext = os.path.splitext(outfile)
+
+    with open(name + ".hex", "wb") as hexfile:
+        hexfile.seek(0)
+        hexfile.truncate()
+        for word in map(lambda x: long_to_bytes(int(x, base=16)), assembledFile.hex):
+            hexfile.write(word)
+        hexfile.close()
+
     print(assembledFile.hex)
 
     print("AssembledFile:" + assembledFile.text)
     return assembledFile
+
+
+def long_to_bytes(val, endianness='big'):
+    from binascii import unhexlify
+    """
+    Use :ref:`string formatting` and :func:`~binascii.unhexlify` to
+    convert ``val``, a :func:`long`, to a byte :func:`str`.
+
+    :param long val: The value to pack
+
+    :param str endianness: The endianness of the result. ``'big'`` for
+      big-endian, ``'little'`` for little-endian.
+
+    If you want byte- and word-ordering to differ, you're on your own.
+
+    Using :ref:`string formatting` lets us use Python's C innards.
+    """
+
+    # one (1) hex digit per four (4) bits
+    width = val.bit_length()
+
+    # unhexlify wants an even multiple of eight (8) bits, but we don't
+    # want more digits than we need (hence the ternary-ish 'or')
+    width += 8 - ((width % 8) or 8)
+
+    # format width specifier: four (4) bits per hex digit
+    fmt = '%%0%dx' % (width // 4)
+
+    # prepend zero (0) to the width, to zero-pad the output
+    s = unhexlify(fmt % val)
+
+    if endianness == 'little':
+        # see http://stackoverflow.com/a/931095/309233
+        s = s[::-1]
+
+    return s
 
 
 def makeGUI():
@@ -241,25 +280,25 @@ def makeGUI():
 
 
     def openFile():
-        global filename
+        global outfile
         openfilename = askopenfilename()
         if openfilename is not None:
-            filename = openfilename
-            asmfile = open(filename, "r")
+            outfile = openfilename
+            asmfile = open(outfile, "r")
             asmfile.seek(0)
             asmdata = asmfile.read()
             textArea.delete("1.0", "end - 1c")
             textArea.insert("1.0", asmdata)
             asmfile.close()
             filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
-            frame.title("muCPU Assembler [" + filename + "]")
+            frame.title("muCPU Assembler [" + outfile + "]")
             frame.focus()
 
 
     def saveFile():
-        global filename
+        global outfile
         asmdata = textArea.get("1.0", "end - 1c")
-        asmfile = open(filename, "w")
+        asmfile = open(outfile, "w")
         asmfile.seek(0)
         asmfile.truncate()
         asmfile.write(asmdata)
@@ -267,20 +306,20 @@ def makeGUI():
 
 
     def saveFileAs():
-        global filename
+        global outfile
         global fileexists
         saveasfilename = asksaveasfilename()
         if saveasfilename is not None:
-            filename = saveasfilename
+            outfile = saveasfilename
             fileexists = True
             asmdata = textArea.get("1.0", "end - 1c")
-            asmfile = open(filename, "w")
+            asmfile = open(outfile, "w")
             asmfile.seek(0)
             asmfile.truncate()
             asmfile.write(asmdata)
             asmfile.close()
             filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
-            frame.title("muCPU Assembler [" + filename + "]")
+            frame.title("muCPU Assembler [" + outfile + "]")
             frame.focus()
 
 
@@ -303,7 +342,7 @@ def makeGUI():
 
     fileMenus = ["Open", "Save", "Save as...", "-", "Close"]
     app.addMenuList("File", fileMenus, menuPress)
-    r1 = 3;
+    r1 = 3
     r5 = 2
     r2 = 2
     r3 = 9
@@ -318,17 +357,17 @@ def makeGUI():
     app.addLabel("Registers2", "R1 = " + str(r1) + "\nR2 = " + str(r2) + "\nR3 = " + str(r3) + "\nR4 = " + str(r4), 0,
                  3, 1)
     # app.addLabel("Memory", "Memory Content", 1, 0, 3)
-    app.startScrollPane("PANE")
-    for x in range(1000):
+    app.startScrollPane("memPane")
+    for x in range(len(sim.mem.theBytes)):
         name = str(x)
         app.addLabel(name, name, row=x)
         app.addLabel(name + "c1", "Memory content to be inserted here", row=x, column=1, colspan=4)
-        app.setLabelBg(name, ("grey"))
+        app.setLabelBg(name, "grey")
     app.stopScrollPane()
 
 
     def toolPress(name):
-        if (name == "Compile"):
+        if name == "Compile":
             sim.__init__(compileASM_GUI(), app)
         elif name == "Execute":
             sim.runAll()

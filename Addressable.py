@@ -236,7 +236,12 @@ class Instruction(Addressable):
         self.offset: int = None
 
         from Assembler import decodeInstruction
-        decodeInstruction(self)
+        try:
+            decodeInstruction(self)
+        # except Exception as e:
+        finally:
+            print('ERROR: while decoding instruction: "{}, args: {}, {}"'.format(lineStr, self.args, self))
+
         Instruction.count += 1  # static counter
 
 
@@ -273,7 +278,8 @@ class Instruction(Addressable):
         },
         5: {
             41,
-        }
+        },
+        6: {},
     }
 
 
@@ -282,23 +288,6 @@ class Instruction(Addressable):
         from Assembler import decodeToHex
         return decodeToHex(self)
 
-
-    def minof3(self, a, b, c):
-        if a <= b and a <= c:
-            return a
-        elif b <= a and b <= c:
-            return b
-        elif c <= b and c <= a:
-            return c
-
-
-    def maxof3(self, a, b, c):
-        if a >= b and a >= c:
-            return a
-        elif b >= a and b >= c:
-            return b
-        elif c >= b and c >= a:
-            return c
 
     def getType(self) -> str:
         pass
@@ -311,8 +300,8 @@ class Instruction(Addressable):
     def __str__(self):
         d = {}
         for attr in ['opcode', 'ra', 'rb', 'rc', 'rd', 'func', 'imm', 'p', 'offset', 's', 'x', 'n', 'imm_L', 'imm_R']:
-            d[attr] = None
-            if hasattr(self, attr):
+            # d[attr] = None
+            if getattr(self, attr) is not None:
                 d[attr] = getattr(self, attr)
         return str(d)
 
@@ -787,11 +776,11 @@ class Instruction(Addressable):
                     sim.regfile.set(self.rdi,
                                     sim.regfile.get(self.rai) and sim.regfile.get(self.rbi) > sim.regfile.get(self.rci))
                 elif self.func == 6:
-                    sim.regfile.set(self.rdi, self.minof3(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
-                                                          sim.regfile.get(self.rci)))
+                    sim.regfile.set(self.rdi, min(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
+                                                  sim.regfile.get(self.rci)))
                 elif self.func == 7:
-                    sim.regfile.set(self.rdi, self.maxof3(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
-                                                          sim.regfile.get(self.rci)))
+                    sim.regfile.set(self.rdi, max(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
+                                                  sim.regfile.get(self.rci)))
                 elif self.func == 8:
                     sim.regfile.set(self.rdi,
                                     sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
@@ -811,11 +800,11 @@ class Instruction(Addressable):
                     sim.regfile.set(self.rdi,
                                     sim.regfile.get(self.rai) or sim.regfile.get(self.rbi) == sim.regfile.get(self.rci))
                 elif self.func == 14:
-                    sim.regfile.set(self.rdi, self.minof3(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
-                                                          sim.regfile.get(self.rci)))
+                    sim.regfile.set(self.rdi, min(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
+                                                  sim.regfile.get(self.rci)))
                 elif self.func == 15:
-                    sim.regfile.set(self.rdi, self.maxof3(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
-                                                          sim.regfile.get(self.rci)))
+                    sim.regfile.set(self.rdi, max(sim.regfile.get(self.rai), sim.regfile.get(self.rbi),
+                                                  sim.regfile.get(self.rci)))
             elif self.x == 2:
                 if self.func == 0:
                     sim.regfile.set(self.rdi,
@@ -833,8 +822,7 @@ class Instruction(Addressable):
                     sim.regfile.set(self.rdi,
                                     sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
                 elif self.func == 5:
-                    pass  # do
-
+                    sim.regfile.set(self.rdi, -sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
         elif opcode in Instruction.sections[6]:
             # for opcode 42 FPU1
             if opcode == 42:

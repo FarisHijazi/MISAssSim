@@ -22,7 +22,7 @@ class AssembledFile:
 
         # assembling the file
 
-        self.hex = ""
+        self.hex = []
         asmlines = re.split("\n", self.text)
         currentSegment = ".text"
 
@@ -38,56 +38,51 @@ class AssembledFile:
         i_counter = 0  # instruction counter for assembling the code (fake counter to keep track of instructions), used to calculate relative addresses
         next_align = 'auto'
         for i in range(len(asmlines)):
-            try:
-                line = asmlines[i].split('//')[0].strip()  # discard comments
+            line = asmlines[i].split('//')[0].strip()  # discard comments
 
-                # parsing
-                segmentDirective_match = re.search("|".join(self.directiveSegments.keys()), line)
-                directive_match = re.search(r'\.[a-zA-z][a-zA-z\d_]+', line)
-                label_match = re.search(r'^@[a-zA-z][a-zA-z\d_]+', line)  # early label
-                dataDirective_match = re.search(r'\.' + "|".join(DataBlock.directives.keys()), line)
+            # parsing
+            segmentDirective_match = re.search("|".join(self.directiveSegments.keys()), line)
+            directive_match = re.search(r'\.[a-zA-z][a-zA-z\d_]+', line)
+            label_match = re.search(r'^@[a-zA-z][a-zA-z\d_]+', line)  # early label
+            dataDirective_match = re.search(r'\.' + "|".join(DataBlock.directives.keys()), line)
 
-                if line and label_match:  # label
-                    if line in self.symbolTable:
-                        raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
+            if line and label_match:  # label
+                if line in self.symbolTable:
+                    raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
 
-                    self.symbolTable[label_match.group().strip()] = Addressable(size=0,
-                                                                                lineStr=line)  # store the address of the label as an Addressable with size=0
+                self.symbolTable[label_match.group().strip()] = Addressable(size=0,
+                                                                            lineStr=line)  # store the address of the label as an Addressable with size=0
 
-                # update current segment
-                elif line and directive_match and line in self.directiveSegments:
-                    currentSegment = directive_match.group().strip()
+            # update current segment
+            elif line and directive_match and line in self.directiveSegments:
+                currentSegment = directive_match.group().strip()
 
-                # storing the data
-                if line and currentSegment in [".data", ".sdata"]:
-                    align_match = re.search(r'\.align\s+(\d+)]+', line)  # '.align 3'
-                    if align_match:
-                        next_align = int(align_match.groups()[0])
-                    elif line not in self.directiveSegments:
-                        dataBlock = DataBlock(lineStr=line, alignment=next_align)
-                        self.directiveSegments.get(currentSegment).append(dataBlock)
+            # storing the data
+            if line and currentSegment in [".data", ".sdata"]:
+                align_match = re.search(r'\.align\s+(\d+)]+', line)  # '.align 3'
+                if align_match:
+                    next_align = int(align_match.groups()[0])
+                elif line not in self.directiveSegments:
+                    dataBlock = DataBlock(lineStr=line, alignment=next_align)
+                    self.directiveSegments.get(currentSegment).append(dataBlock)
 
-                elif line and currentSegment == ".text" and not directive_match:  # .text cannot be in the same line as an instruction
-                    # instruction
-                    instr = Instruction(line)
+            elif line and currentSegment == ".text" and not directive_match:  # .text cannot be in the same line as an instruction
+                # instruction
+                instr = Instruction(line)
 
-                    # TODO: fix hex (buggy)
-                    # print(str(i) + " => " + str(instr) + " => x\"" + instr.hex() + "\",\n")
-                    self.hex += instr.hex() + "\n"  # TODO: somehow concat bytes
+                print('{0} => {1} => x"{2}",\n'.format(str(i), str(instr), instr.hex()))
+                self.hex.append(instr.hex())
 
-                    self.directiveSegments[currentSegment] += [instr]
+                self.directiveSegments[currentSegment] += [instr]
 
-                print('{}:\t"{}"'
-                      '\n\tsegment: {}'
-                      '\n\tdirective: {}'
-                      '\n\tlabel: {}\n'.format(i, line, currentSegment, reGroup(segmentDirective_match),
-                                               reGroup(directive_match),
-                                               reGroup(label_match)))
+            print('{}:\t"{}"'
+                  '\n\tsegment: {}'
+                  '\n\tdirective: {}'
+                  '\n\tlabel: {}\n'.format(i, line, currentSegment, reGroup(segmentDirective_match),
+                                           reGroup(directive_match),
+                                           reGroup(label_match)))
 
-                # TODO: increment current line and current address
-            except Exception as e:
-                print('ERROR: while decoding instruction: "{}"'.format(asmlines[i], e, e.__traceback__))
-                raise Exception(e)
+            # TODO: increment current line and current address
 
         print("Successfully assembled file:", self)
 
@@ -103,5 +98,3 @@ def extractDirective(lineStr: str):
     return match if not match else match.group()
 
 
-def getHex(self):
-    return

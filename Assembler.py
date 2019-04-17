@@ -690,8 +690,6 @@ def asmtoint5(d):
     d.rbi = reg(d.rb)
     d.rci = reg(d.rc)
 
-    # return d
-
 
 def inttohex(d):
     instruction = "0" * 32
@@ -908,14 +906,12 @@ def decodeInstruction(d):
         asmtoint3(d)
     # Section 4
     # Checking if it belongs to ALUI (Opcode 32 - 35)
-    elif len(d.args) == 5 and d.op in ["add", "and", "or", "xor", "nadd", "cand", "cor", "xnor", "sub", "andc", "orc",
-                                       "eq", "ne", "lt", "ge", "ltu", "geu", "min", "max", "gt", "le", "gtu", "leu"]:
+    elif len(d.args) == 5 and d.op in sec4_ALUI_dict:
         if len(d.args) != 5:
             asmtointALUI(d)
 
     # Checking if it belongs to RET (Opcode 36)
-    elif d.op in ["retadd", "retnadd", "retand", "retcand", "retor", "retcor", "retxor", "retset",
-                  "reteq", "retne", "retlt", "retge", "retltu", "retgeu", "retmin", "retmax"]:
+    elif d.op in sec4_RET_dict:
         print(d.op)
         if (len(d.args) != 4) and d.op != "xnor" and d.op != "cor":  # XNOR is in section 5 and contains 5 arguments
             raise Exception('Incorrect Number of arguments')
@@ -925,8 +921,7 @@ def decodeInstruction(d):
     elif d.op == "orc":
         if len(d.args) != 2:
             raise Exception('Incorrect Number of arguments')
-        asmtointNOP(
-            d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
+        asmtointNOP(d)  # FIXME: IDK what this is supposed to be [Rakan: i left it here so that we don't forget about it in the simulator]
     # Checking if it belongs to SHIFT (Opcode 37)
     # FIXME:
     elif d.op in sec4_SHIFT_dict:
@@ -948,9 +943,13 @@ def decodeInstruction(d):
             asmtoint5(d)
     else:
         print("Returning all zeroes since the instruction is not recognized")
+
+        for attr in ['opcode', 'ra', 'rb', 'rc', 'rd', 'func', 'imm', 'p', 'offset', 's', 'x', 'n', 'imm_L', 'imm_R']:
+            setattr(d, attr, 0)
+
         return d  # this is the default/NOP case
     # opcode 41
-    # This is not elif statement because it shares instruction names with previous elif statements
+    # This is not elif statement because it shares instruction __names__ with previous elif statements
     if d.op in opcodes.get('alu'):
         if len(d.args) != 5 and len(d.args) != 4:
             raise Exception("Incorrect Number of parameters passed")

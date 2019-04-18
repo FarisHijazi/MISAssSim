@@ -41,6 +41,8 @@ class Simulator:
     def init(self, *args, **kwargs):
         """ resets the simulator, preparing it for a new file """
         self.__init__(*args, **kwargs)
+        self.updateMemFromGUI()
+        self.updateRegsFromGUI()
         # reset memory and stuff
 
 

@@ -14,9 +14,9 @@ sim = None
 def compileASM(asm_text):
     assembledFile = AssembledFile(asm_text)
     # print cpu_out
-    name, ext = os.path.splitext(outfile)
+    fname, ext = os.path.splitext(outfile)
 
-    with open(name + ".hex", "wb") as hexfile:
+    with open(fname + ".hex", "wb") as hexfile:
         hexfile.seek(0)
         hexfile.truncate()
         for word in map(lambda x: long_to_bytes(int(x, base=16)), assembledFile.hex):
@@ -65,20 +65,18 @@ def long_to_bytes(val, endianness='big'):
     return s
 
 
-def makeGUI(text):
+def makeGUI(startText: str):
     app = gui("M-Architecture Simulation ", "800x675")
     app.setSticky("news")
     app.setExpand("both")
     app.setFont(14)
 
 
-
     def redisplayMem():
         # This is a naaive way it can be optimized, no time
         app.openScrollPane("memPane")
         for index in range(len(sim.mem.theBytes)):
-            name = str(index) + "c1"
-            app.setLabel(name, sim.mem.theBytes[index])
+            app.setEntry("Mem{0}".format(index), sim.mem.theBytes[index])
         app.stopScrollPane()
 
 
@@ -140,7 +138,8 @@ def makeGUI(text):
         elif name == "Close":
             app.stop()
 
-    app.addScrolledTextArea("code", 0, 0, 2, text=text)
+
+    app.addScrolledTextArea("code", 0, 0, 2, text=startText)
 
 
     def toolPress(name):
@@ -157,8 +156,9 @@ def makeGUI(text):
 
     app.startScrollPane("regs")
     for i, name, value, rep in sim.sim.regfile.items():
-        # app.addLabel(name + "_name", text=name, row=i, column=1, colspan=1, selectable=False)
+        # app.addLabel(name + "_name", startText=name, row=i, column=1, colspan=1, selectable=False)
         app.addLabelEntry(name, row=i, column=2, colspan=6)
+        app.setLabel(name, name + '\t')
         app.setEntry(name, value)
         app.addLabel(name + "_rep", text=rep, row=i, column=3, colspan=1, selectable=False)
         # app.addLabel("{0}regs".format(i), "", row=i, column=1, colspan=4)
@@ -168,11 +168,13 @@ def makeGUI(text):
     # Parameters passed are (row    column  columnSpan)
     app.startScrollPane("memPane")
     for x in range(len(sim.mem.theBytes)):
-        app.addLabel(str(x), text=str(x), row=x)
-        app.addLabel("{0}c1".format(x), "", row=x, column=1, colspan=4)
-        app.setLabelBg(str(x), "grey")
-    app.stopScrollPane()
+        # app.addLabel(str(x), "", row=x, column=1, colspan=4)
+        name = "Mem{0}".format(x)
 
+        app.addLabelEntry(name, row=x)
+        app.setLabel(name, name + '\t')
+        app.setLabelBg(name, "grey")
+    app.stopScrollPane()
 
     sim.redisplayReg()
     redisplayMem()
@@ -190,8 +192,10 @@ def makeGUI(text):
 
 # argument parsing
 import argparse
+
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--file', nargs='?', type=argparse.FileType('r'), help='path to the file program file (optional)')
+parser.add_argument('-f', '--file', nargs='?', type=str,
+                    help='(optional) path to assembly file, either to be loaded in GUI or to compile in the CLI')
 parser.add_argument('-i', '--asm', type=str, default="",
                     help="Assembly instruction(s) to assemble (separate with ';' as new line)")
 parser.add_argument('-t', '--text', default=False, action="store_true", help='Text mode')  # text mode
@@ -204,7 +208,7 @@ _assembledFile: AssembledFile
 sim = Simulator()
 
 # if the user passed a valid filepath, then don't run GUI and just compile it in the command line
-
+intext = ""
 
 if cmd_args.text:
     accumulatedInput = ""
@@ -247,8 +251,10 @@ if cmd_args.text:
             accumulatedInput += ipt + '\n'
             i += 1
 
-if cmd_args.file:
-    _assembledFile = compileASM(cmd_args.file.read())
+if cmd_args.file and os.path.isfile(cmd_args.file):
+    with open(cmd_args.file, 'r') as file:
+        intext = file.read()
+        _assembledFile = compileASM(intext)
     # cmd_args.file = file
 
     sim.init(_assembledFile)
@@ -261,19 +267,16 @@ if cmd_args.asm:
 
     _assembledFile = compileASM(asm)
 
-
 if not cmd_args.run:
-    text = ""
-    if cmd_args and cmd_args.file:
-        text = cmd_args.file.read()
     if cmd_args and cmd_args.asm:
-        text = cmd_args.asm
+        print("Reading asm args")
+        intext = cmd_args.asm
 
     # clear args so that appjar wouldn't get messed up
     sys.argv = [sys.argv[0]]
 
     Tk().withdraw()
-    frame = makeGUI(text)
+    frame = makeGUI(intext)
 
 elif _assembledFile:
     sim.init(_assembledFile)

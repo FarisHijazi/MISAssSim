@@ -75,9 +75,6 @@ class AssembledFile:
                 # instruction
                 instr = Instruction(line, symbolTable=self.symbolTable)
 
-                print('{0} => {1} => x"{2}",\n'.format(str(i), str(instr), instr.hex()))
-                self.hex.append(instr.hex())
-
                 self.directiveSegments[currentSegment] += [instr]
                 i_counter += 1
 
@@ -90,8 +87,12 @@ class AssembledFile:
 
             # TODO: increment current line and current address
 
+        i = 0
         for instr in self.directiveSegments.get('.text'):
             instr.calcLabelOffset()
+            print('{0} => {1} => x"{2}",\n'.format(str(i), str(instr), instr.hex()))
+            self.hex.append(instr.hex())
+            i += 1
 
         print("Successfully assembled file:", self)
 

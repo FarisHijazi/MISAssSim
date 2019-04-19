@@ -149,23 +149,36 @@ def makeGUI(startText: str):
     app.startScrollPane("regs",row=0,column=2)
     for i, name, value, rep in sim.regfile.items():
         # app.addLabel(name + "_name", startText=name, row=i, column=1, colspan=1, selectable=False)
-        app.addLabelEntry(name, row=i, column=2, colspan=6)
-        app.setLabel(name, name + '\t')
-        app.setEntry(name, value)
+        # app.setEntry(name, value)
+        # app.setLabel(name, name + '\t')
+        
+        def onReprButton(btnName):
+            sim.regfile.cycleRep(i)
+            sim.redisplayReg()
+        
+        app.addButton(name, func=onReprButton)
+        app.entry(name + "_entry", value=value, row=i, column=2, colspan=6)
         app.addLabel(name + "_rep", text=rep, row=i, column=3, colspan=1, selectable=False)
-        # app.addLabel("{0}regs".format(i), "", row=i, column=1, colspan=4)
-        # app.setLabel(name, sim.regfile[i])
+
     app.stopScrollPane()
 
     # Parameters passed are (row    column  columnSpan)
     app.startScrollPane("memPane", row=1)
-    for x in range(len(sim.mem.theBytes)):
+    greyToggle = True
+    for x, name, value, rep in sim.mem.items():
         # app.addLabel(str(x), "", row=x, column=1, colspan=4)
-        name = "Mem{0}".format(x)
+        
+        def onReprButtonMem(btnName):
+            sim.mem.cycleRep(i)
+            sim.redisplayReg()
+        
+        app.addButton(name, func=onReprButtonMem)
 
-        app.addLabelEntry(name, row=x)
-        app.setLabel(name, name + '\t')
-        app.setLabelBg(name, "grey")
+        app.entry(name+"_entry", value=value, row=x)
+        # app.setLabel(name, name + '\t')
+        if greyToggle:
+            app.setEntryBg(name+"_entry", "grey")
+        greyToggle = not greyToggle
     app.stopScrollPane()
 
     app.addScrolledTextArea("console",row=1,column=1,colspan=2)

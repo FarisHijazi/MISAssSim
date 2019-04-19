@@ -8,6 +8,9 @@ in the [King Fahd University of Petroleum & Minerals (KFUPM)](http://www.kfupm.e
 - [Project Proposal COE403 M-Architecture Emulator - term 182](#project-proposal-coe403-m-architecture-emulator---term-182)
   - [Table of Contents](#table-of-contents)
   - [Team members](#team-members)
+  - [Usage](#usage)
+    - [Command line](#command-line)
+    - [GUI](#gui)
   - [Instructor requirements](#instructor-requirements)
   - [Project description](#project-description)
     - [Proposed solution](#proposed-solution)
@@ -24,6 +27,28 @@ in the [King Fahd University of Petroleum & Minerals (KFUPM)](http://www.kfupm.e
 | Rakan Aalsoraye | s201238740 |
 
 ******
+
+## Usage
+
+### Command line
+
+```
+usage: MainProgram.py [-h] [-f [FILE]] [-i ASM] [-t] [-r]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f [FILE], --file [FILE]
+                        (optional) path to assembly file, either to be loaded
+                        in GUI or to compile in the CLI
+  -i ASM, --asm ASM     Assembly instruction(s) to assemble (separate with ';' as new line)
+  -t, --text            Text mode
+  -r, --run             run after assembling (only for cmd mode (non-gui))
+```
+
+### GUI
+
+You may use the graphical user interface (default if nothing is passed in the command line).
+You may still pass a file name with `--file` and it will open in the editor.
 
 ## Instructor requirements
 

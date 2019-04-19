@@ -56,6 +56,11 @@ class Simulator:
             self.updateRegsFromGUI()
         # reset memory and stuff
 
+    def log(self, *args):
+    	if self.gui:
+    		self.gui.getTextArea('console', *args)
+    	else:
+    		print('CONSOLE:', *args)
 
     def executeInstruction(self, instruction: Instruction):
         instruction.execute(self)

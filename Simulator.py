@@ -1,6 +1,7 @@
 from Addressable import Instruction
 from AssembledFile import AssembledFile
 
+printContent = False
 
 def parseFloatStr(string):
     return 0  # TODO:
@@ -60,8 +61,11 @@ class Simulator:
 
         next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
         self.executeInstruction(next_instruction)
-        print('step() Run instr: "{0}"'
-              '\nRegFile: {1}'.format(str(next_instruction), str(self.regfile)))
+
+        if printContent:
+            print('step() Run instr: "{0}"'
+                '\nRegFile: {1}'.format(str(next_instruction), str(self.regfile)))
+        
         self.pc += 1
 
         self.redisplayReg()
@@ -74,13 +78,16 @@ class Simulator:
             raise Exception("no assembled file, must compile")
         else:
             self.updateMemFromGUI()
+            self.updateRegsFromGUI()
 
             instructions = self.assembledFile.directiveSegments.get('.text', [])
             for instr in instructions:
                 if self.pc < len(instructions):
                     self.executeInstruction(instr)
-                    print('Running instr: "{0}"'
-                          '\nRegFile: {1}'.format(str(instr), str(self.regfile)))
+
+                    if printContent:
+                        print('Running instr: "{0}"'
+                            '\nRegFile: {1}'.format(str(instr), str(self.regfile)))
                     self.pc += 1
 
             self.redisplayReg()
@@ -115,7 +122,9 @@ class Simulator:
     def redisplayMem(self):
         if self.gui is None:
             # raise Exception("No gui object")
-            print("Mem content: {}".format(self.regfile))
+            if printContent:
+                print("Mem content: {}".format(self.regfile))
+            pass
         else: # if gui:
             self.gui.openScrollPane("memPane")
 
@@ -127,7 +136,9 @@ class Simulator:
     def redisplayReg(self):
         if self.gui is None:
             # raise Exception("No gui object")
-            print("Register content: {}".format(self.regfile))
+            if printContent:
+                print("Register content: {}".format(self.regfile))
+            pass
         else:
             self.gui.openScrollPane("regs")
 

@@ -4,16 +4,15 @@ from AssembledFile import AssembledFile
 printContent = False
 
 def parseFloatStr(string):
-    return 0  # TODO:
+    return 0 if not string else 0 # TODO:
 def parseDecStr(string):
-    return int(string)
+    return 0 if not string else int(string)
 def parseHexStr(string):
-    return int(string, 16)
+    return 0 if not string else int(string, 16)
 def parseBinStr(string):
-    return int(string, 2)
+    return 0 if not string else int(string, 2)
 def parseAsciiStr(string):
-    return 0 #TODO:
-
+    return 0 if not string else 0 #TODO:
 
 representationParsers = {
     'fp': parseFloatStr,
@@ -23,11 +22,27 @@ representationParsers = {
     'ascii': parseAsciiStr,
 }
 
+import re
+# assuming the input value is a signed decimal value (TODO: this should become bytes)
+addressBits = 64
+addressBytes = addressBits//8
+representationFormatter = {
+    # TODO: replace those '' with '0's, and make the entries in the gui wider
+    'fp': lambda val: re.sub(r'\s', '', format(val, str(addressBits)+'b')), #TODO: format to floating point
+    'hex': lambda val: re.sub(r'\s', '', format(val, str(addressBytes//2)+'x')),
+    'bin': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'b')),
+    'dec': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'d')),
+    'ascii': lambda val: re.sub(r'\s', '', format(val, str(addressBytes//2)+'x')), #TODO: this is bs, just a place holder
+}
+
 
 class Simulator:
+
+    reps = ['fp', 'hex', 'bin', 'dec', 'ascii']
+
     def __init__(self, assembledFile=None, gui=None):
         self.regfile = Simulator.Regfile("gp")
-        self.mem = Simulator.Mem()
+        self.mem = Simulator.Mem(size=32)
         self.pc = 0  # the Prorgam Counter
         self.assembledFile = assembledFile
         self.gui = gui
@@ -67,9 +82,9 @@ class Simulator:
         next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
         self.executeInstruction(next_instruction)
 
+        print('step() Run instr: "{0}"'.format(str(next_instruction.lineStr)))
         if printContent:
-            print('step() Run instr: "{0}"'
-                '\nRegFile: {1}'.format(str(next_instruction), str(self.regfile)))
+            print('RegFile: {1}'.format(str(self.regfile)))
         
         self.pc += 1
 
@@ -105,7 +120,8 @@ class Simulator:
             guistr = self.gui.getEntry(name)
             self.regfile[i] = representationParsers.get(rep)(guistr)
         self.gui.stopScrollPane()
-        pass
+        
+        self.redisplayMem()
 
 
     def updateMemFromGUI(self):
@@ -115,13 +131,12 @@ class Simulator:
         self.gui.openScrollPane("regs")
 
         # iterating over the names and getting the values
-        for i in range(len(self.mem.theBytes)):
-            rep = 'dec' # TODO: later create mem.items() so each cell has a representation
-            name = "Mem{0}".format(i)
+        for i, name, value, rep in self.mem.items():
             guistr = self.gui.getEntry(name)
             self.mem[i] = representationParsers.get(rep)(guistr)
 
         self.gui.stopScrollPane()
+        self.redisplayMem()
 
 
     def redisplayMem(self):
@@ -133,9 +148,9 @@ class Simulator:
         else: # if gui:
             self.gui.openScrollPane("memPane")
 
-            for index in range(len(self.mem.theBytes)):
-                name = "Mem{0}".format(index)
-                self.gui.setLabel(name, self.mem.theBytes[index])
+            for i, name, value, rep in self.mem.items():
+                formatted = representationFormatter.get(rep)(value)
+                self.gui.setEntry(name, formatted)
                 # self.gui.stopScrollPane()
 
     def redisplayReg(self):
@@ -148,7 +163,8 @@ class Simulator:
             self.gui.openScrollPane("regs")
 
             for i, name, value, rep in self.regfile.items():
-                self.gui.setEntry(name, value)
+                formatted = representationFormatter.get(rep)(value) #TODO: use a formatter, have a dictionary just like the parser (but the opposite)
+                self.gui.setEntry(name, formatted)
             self.gui.stopScrollPane()
 
     class Regfile:
@@ -174,7 +190,8 @@ class Simulator:
 
             self.__names__ = names  # list of reg __names__ ['r0', 'r1', 'r2'...]
             self.__regs__ = [0] * length
-            self.representationParsers = representations
+            # self.representationParsers = representations
+            self.__reps__ = representations
 
             self.__regs__[1] = 1  # DEBUG: FIXME: just for testing
 
@@ -185,9 +202,8 @@ class Simulator:
             :return: (index, name: str, value: int, representation: str)
             """
             if not stringify:
-                return zip(range(len(self.__names__)), self.__names__, self.__regs__, self.representationParsers)
-            return zip(map(str, range(len(self.__names__))), self.__names__, map(str, self.__regs__),
-                       self.representationParsers)
+                return zip(range(len(self.__names__)), self.__names__, self.__regs__, self.__reps__)
+            return zip(map(str, range(len(self.__names__))), self.__names__, map(str, self.__regs__), self.__reps__)
 
 
         def __setitem__(self, key, value):
@@ -214,15 +230,25 @@ class Simulator:
             return "{} register file:\n\t{}".format(self.name,
                                                     "\n\t".join(map(str, zip(self.__names__, self.__regs__))))
 
+
     class Mem:
-        def __init__(self):
-            self.theBytes = ["00000000"] * 32
-            self.current = 0
+        def __init__(self, size=2**64):
+            self.theBytes = [0] * size
+            self.__names__ = ['Mem{}'.format(i) for i in range(size)]
+            self.__reps__ = ['hex'] * size
+            self.__current__ = 0
 
         def set(self, address, byteElements):
             for b in [byteElements]: # if multiple elements
                 self.theBytes[address] = b
                 address += 1
+
+        def items(self):
+            """
+            the names are the same names used in the gui
+            :returns the items (index, name:str, byte, rep)
+            """
+            return zip(range(len(self.theBytes)), self.__names__, self.theBytes, self.__reps__)
 
         def get(self, address, nbytes=1):
             return self.theBytes[address:address + nbytes]
@@ -241,12 +267,12 @@ class Simulator:
             return self
 
         def next(self): # Python 3: def __next__(self)
-            if self.current > len(self.theBytes)-1:
-                self.current = 0
+            if self.__current__ > len(self.theBytes)-1:
+                self.__current__ = 0
                 raise StopIteration
             else:
-                self.current += 1
-                return self.theBytes[self.current]
+                self.__current__ += 1
+                return self.theBytes[self.__current__]
 
         def __str__(self):
             return "Memory:\n\t{}".format("\n\t".join(map(str, zip(range(len(self.theBytes)), self.theBytes))))

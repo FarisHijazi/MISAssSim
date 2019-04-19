@@ -115,7 +115,7 @@ class Simulator:
     def redisplayMem(self):
         if self.gui is None:
             # raise Exception("No gui object")
-            print("Register content:".format(self.regfile))
+            print("Mem content: {}".format(self.regfile))
         else: # if gui:
             self.gui.openScrollPane("memPane")
 
@@ -127,7 +127,7 @@ class Simulator:
     def redisplayReg(self):
         if self.gui is None:
             # raise Exception("No gui object")
-            print("Register content:".format(self.regfile))
+            print("Register content: {}".format(self.regfile))
         else:
             self.gui.openScrollPane("regs")
 

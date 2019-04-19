@@ -108,9 +108,9 @@ class DataBlock(Addressable):
         """
         arg = arg.strip()
         if arg[0] == arg[-1] == "'":  # single quotes
-            return bytearray(arg[1:-1], 'ascii')
+            return bytearray(arg[1:-1], 'asci')
         elif arg[0] == arg[-1] == '"':  # null terminated
-            return bytearray(arg[1:-1] + '\0', 'ascii')
+            return bytearray(arg[1:-1] + '\0', 'asci')
         # elif not re.search(r'[^+\-\d]', arg): # if numbers only
         else:  # FIXME: this is just quickly for testing
             # ([\da-fbohx_.\-+,]+)(:([\da-fbohx.\s\-+,]+))?
@@ -340,12 +340,11 @@ class Instruction(Addressable):
 
 
     def execute(self, sim):
-        opcode = self.opcode
-        if opcode in Instruction.sections[2]:
+        if self.opcode in Instruction.sections[2]:
             pass  # do
-        elif opcode in Instruction.sections[3]:
-            if opcode in {24, 25}:
-                if opcode == 24:
+        elif self.opcode in Instruction.sections[3]:
+            if self.opcode in {24, 25}:
+                if self.opcode == 24:
                     if self.func == 0:  # LBU
                         pass  # do
                     elif self.func == 1:  # LHU
@@ -385,7 +384,7 @@ class Instruction(Addressable):
                         binaryString7 = sim.mem.theBytes[index + 7]
                         finalString = binaryString + binaryString1 + binaryString2 + binaryString3 + binaryString4 + binaryString5 + binaryString6 + binaryString7
                         sim.regfile.set(self.rbi, int(finalString, 2))
-                elif opcode == 25:
+                elif self.opcode == 25:
                     if self.func == 0:  # SB
                         rValue = sim.regfile.get(self.rbi)
                         rValueBin = format(rValue, '064b')
@@ -417,7 +416,7 @@ class Instruction(Addressable):
                         sim.mem.theBytes[index + 2] = rValueBin[16:24]
                         sim.mem.theBytes[index + 1] = rValueBin[8:16]
                         sim.mem.theBytes[index] = rValueBin[0:8]
-            elif opcode == 26:  # LoadX
+            elif self.opcode == 26:  # LoadX
                 if self.func == 0:  # LBU
                     pass  # do
                 elif self.func == 1:  # LHU
@@ -434,7 +433,7 @@ class Instruction(Addressable):
                     pass  # do
                 elif self.func == 7:  # LD
                     pass  # do
-            elif opcode == 27:
+            elif self.opcode == 27:
                 s = self.s
                 rc = self.rc
                 if self.func == 0:  # SB
@@ -445,76 +444,76 @@ class Instruction(Addressable):
                     pass  # do
                 elif self.func == 3:  # SD
                     pass  # do
-        elif opcode in Instruction.sections[4]:  # i need to distinguish between the duplicated instructions in here
-            # for opcode 32 - 35
-            if opcode in [32, 33, 34, 45]:  # Rb is the destination here
+        elif self.opcode in Instruction.sections[4]:  # i need to distinguish between the duplicated instructions in here
+            # for self.opcode 32 - 35
+            if self.opcode in [32, 33, 34, 45]:  # Rb is the destination here
                 if self.func == 0:  # ADD   [sign extend imm to 64 bits]
-                    rb = self.ra + self.imm
+                    self.rbi = self.rai + self.imm
                 elif self.func == 1:  # NADD  [sign extend imm to 64 bits]
-                    rb = -self.ra + self.imm
+                    self.rbi = -self.rai + self.imm
                 elif self.func == 2:  # AND   [sign extend imm to 64 bits]
-                    rb = self.ra & self.imm
+                    self.rbi = self.rai & self.imm
                 elif self.func == 3:  # CAND  [sign extend imm to 64 bits]
-                    rb = ~self.ra & self.imm
+                    self.rbi = ~self.rai & self.imm
                 elif self.func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = self.ra | self.imm
+                    self.rbi = self.rai | self.imm
                 elif self.func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~self.ra | self.imm
+                    self.rbi = ~self.rai | self.imm
                 elif self.func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = self.ra ^ self.imm
+                    self.rbi = self.rai ^ self.imm
+                elif self.func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
+                    self.rbi = self.imm
+                elif self.func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
+                    self.rbi = (self.rai == self.imm)
+                elif self.func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
+                    self.rbi = (self.rai != self.imm)
+                elif self.func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    self.rbi = (self.rai < self.imm)
+                elif self.func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
+                    self.rbi = (self.rai > self.imm)
+                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    self.rbi = (self.rai < self.imm)
+                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
+                    self.rbi = (self.rai > self.imm)
+                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    self.rbi = min(self.rai, self.imm)
+                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    self.rbi = max(self.rai, self.imm)
+
+
+            elif self.opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12 
+                if self.func == 0:  # ADD   [sign extend imm to 64 bits]
+                    rb = self.rai + self.imm
+                elif self.func == 1:  # NADD  [sign extend imm to 64 bits]
+                    rb = -self.rai + self.imm
+                elif self.func == 2:  # AND   [sign extend imm to 64 bits]
+                    rb = self.rai & self.imm
+                elif self.func == 3:  # CAND  [sign extend imm to 64 bits]
+                    rb = ~self.rai & self.imm
+                elif self.func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.rai | self.imm
+                elif self.func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = ~self.rai | self.imm
+                elif self.func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
+                    rb = self.rai ^ self.imm
                 elif self.func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
                     rb = self.imm
                 elif self.func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (self.ra == self.imm)
+                    rb = (self.rai == self.imm)
                 elif self.func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (self.ra != self.imm)
+                    rb = (self.rai != self.imm)
                 elif self.func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (self.ra < self.imm)
+                    rb = (self.rai < self.imm)
                 elif self.func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (self.ra > self.imm)
+                    rb = (self.rai > self.imm)
                 elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (self.ra < self.imm)
+                    rb = (self.rai < self.imm)
                 elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (self.ra > self.imm)
+                    rb = (self.rai > self.imm)
                 elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(self.ra, self.imm)
+                    rb = min(self.rai, self.imm)
                 elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(self.ra, self.imm)
-
-
-            elif opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12 
-                if self.func == 0:  # ADD   [sign extend imm to 64 bits]
-                    rb = self.ra + self.imm
-                elif self.func == 1:  # NADD  [sign extend imm to 64 bits]
-                    rb = -self.ra + self.imm
-                elif self.func == 2:  # AND   [sign extend imm to 64 bits]
-                    rb = self.ra & self.imm
-                elif self.func == 3:  # CAND  [sign extend imm to 64 bits]
-                    rb = ~self.ra & self.imm
-                elif self.func == 4:  # OR    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = self.ra | self.imm
-                elif self.func == 5:  # COR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = ~self.ra | self.imm
-                elif self.func == 6:  # XOR   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = self.ra ^ self.imm
-                elif self.func == 7:  # SET   [sign extend imm to 64 bits & use 1 NOP]
-                    rb = self.imm
-                elif self.func == 8:  # EQ    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (self.ra == self.imm)
-                elif self.func == 9:  # NE    [sign extend imm to 64 bits & use 1 NOP]
-                    rb = (self.ra != self.imm)
-                elif self.func == 10:  # LT    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (self.ra < self.imm)
-                elif self.func == 11:  # GE    [sign extend imm to 64 bits & use 1 NOP]  [signed   comparison]?
-                    rb = (self.ra > self.imm)
-                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (self.ra < self.imm)
-                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]?
-                    rb = (self.ra > self.imm)
-                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = min(self.ra, self.imm)
-                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                    rb = max(self.ra, self.imm)
+                    rb = max(self.rai, self.imm)
 
 
             # function for Creating unsigned number
@@ -529,8 +528,8 @@ class Instruction(Addressable):
             unsigned_imm = unsign(self.imm)
             unsigned_extended_64_imm = unsign(sign_extended_64_imm)
 
-            # for opcode 32 - 35
-            if opcode in {32, 33, 34,
+            # for self.opcode 32 - 35
+            if self.opcode in {32, 33, 34,
                           45}:  # Rb is the destination here, also: [sign extend imm to 64 bits], NOP is not implemented
                 if self.func == 0:  # ADD
                     #  rbi = rai + imm
@@ -581,8 +580,15 @@ class Instruction(Addressable):
                     #   rbi = max(rai, imm)
                     sim.regfile.set(self.rbi, max(sim.regfile.get(self.rai), sign_extended_64_imm))
 
-                    # in this next opcode(36): RETURN/Jumping is not done yet
-            elif opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12
+                    # in this next self.opcode(36): RETURN/Jumping is not done yet
+            elif self.opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12
+                sim.regfile[31] = sim.pc
+                if self.offset is not None:
+                    print("Jumping with offset={}".format(self.offset))
+                    sim.pc += self.offset
+                else:
+                    print("WARNING: return instruction doesn't have offset: {}".format(self))
+
                 if self.func == 0:  # ADD
                     #  rbi = rai + imm
                     sim.regfile.set(self.rbi, sim.regfile.get(self.rai) + sign_extended_64_imm)
@@ -633,8 +639,8 @@ class Instruction(Addressable):
                     sim.regfile.set(self.rbi, max(sim.regfile.get(self.rai), sign_extended_64_imm))
 
 
-            # for Opcode 37 SHIFT
-            elif opcode == 37:
+            # for self.Opcode 37 SHIFT
+            elif self.opcode == 37:
                 if self.func == 0:  # SHLR
                     #  rbi = ((rai << self.imm_L) >> self.imm_R)
                     sim.regfile.set(self.rdi, ((sim.regfile.get(self.rai) << self.imm_L) >> self.imm_R))
@@ -658,8 +664,8 @@ class Instruction(Addressable):
                     sim.regfile.set(self.rdi, unsign(sim.regfile.get(self.rai)) % unsign(sim.regfile.get(self.rbi)))
 
 
-            # for opcode 40
-            elif opcode == 40:
+            # for self.opcode 40
+            elif self.opcode == 40:
                 if self.x == 0:
                     if self.func == 0:  # ADD
                         #    rd = rai + rbi
@@ -747,7 +753,7 @@ class Instruction(Addressable):
                     #  rd = -rai + (rbi << self.n)
                     sim.regfile.set(self.rdi, (-sim.regfile.get(self.rai) + (sim.regfile.get(self.rbi) << self.n)))
 
-        elif opcode in Instruction.sections[5]:
+        elif self.opcode in Instruction.sections[5]:
             if self.x == 0:
                 if self.func == 0:
                     sim.regfile.set(self.rdi,
@@ -849,9 +855,9 @@ class Instruction(Addressable):
                 elif self.func == 5:
                     sim.regfile.set(self.rdi,
                                     -sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci))
-        elif opcode in Instruction.sections[6]:
-            # for opcode 42 FPU1
-            if opcode == 42:
+        elif self.opcode in Instruction.sections[6]:
+            # for self.opcode 42 FPU1
+            if self.opcode == 42:
                 if self.p == 0:  # SINGLE PERCISION
                     if self.func == 0:  # ABS
                         sim.regfile.set(self.rdi, abs(sim.regfile.get(self.rai)))
@@ -884,8 +890,8 @@ class Instruction(Addressable):
                         pass  # do
 
 
-            # for opcode 43 FPU2
-            elif opcode == 43:
+            # for self.opcode 43 FPU2
+            elif self.opcode == 43:
                 if self.p == 0:  # SINGLE PERCISION
                     if self.func == 0:  # EQ
                         sim.regfile.set(self.rdi, (sim.regfile.get(self.rai) == sim.regfile.get(self.rbi)))
@@ -937,8 +943,8 @@ class Instruction(Addressable):
                     elif self.func == 13:  # MAX
                         sim.regfile.set(self.rdi, max(sim.regfile.get(self.rai), sim.regfile.get(self.rbi)))
 
-            # for opcode 44 FPU3
-            elif opcode == 44:
+            # for self.opcode 44 FPU3
+            elif self.opcode == 44:
                 if self.p == 0:  # SINGLE PERCISION
                     if self.func == 0:  # ANDEQ
                         sim.regfile.set(self.rdi, (sim.regfile.get(self.rai) and (

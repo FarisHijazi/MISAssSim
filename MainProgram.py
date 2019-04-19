@@ -139,7 +139,7 @@ def makeGUI(startText: str):
             app.stop()
 
 
-    app.addScrolledTextArea("code", 0, 0, 2, text=startText)
+    app.addScrolledTextArea("code", 0, 0,2,  text=startText)
 
 
     def toolPress(name):
@@ -154,7 +154,7 @@ def makeGUI(startText: str):
     fileMenus = ["Open", "Save", "Save as...", "-", "Close"]
     app.addMenuList("File", fileMenus, menuPress)
 
-    app.startScrollPane("regs")
+    app.startScrollPane("regs",row=0,column=2)
     for i, name, value, rep in sim.regfile.items():
         # app.addLabel(name + "_name", startText=name, row=i, column=1, colspan=1, selectable=False)
         app.addLabelEntry(name, row=i, column=2, colspan=6)
@@ -166,7 +166,7 @@ def makeGUI(startText: str):
     app.stopScrollPane()
 
     # Parameters passed are (row    column  columnSpan)
-    app.startScrollPane("memPane")
+    app.startScrollPane("memPane", row=1)
     for x in range(len(sim.mem.theBytes)):
         # app.addLabel(str(x), "", row=x, column=1, colspan=4)
         name = "Mem{0}".format(x)
@@ -175,6 +175,8 @@ def makeGUI(startText: str):
         app.setLabel(name, name + '\t')
         app.setLabelBg(name, "grey")
     app.stopScrollPane()
+
+    app.addScrolledTextArea("console",row=1,column=1,colspan=2)
 
     sim.redisplayReg()
     redisplayMem()

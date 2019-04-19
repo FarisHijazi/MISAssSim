@@ -274,19 +274,33 @@ class Instruction(Addressable):
             24,
             25,
             26,
-            27
+            27,
         },
         4: {
-
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            40,
         },
         5: {
             41,
         },
-        6: {},
+        6: {
+            42,
+            43,
+            44,
+        },
     }
 
 
     def calcLabelOffset(self):
+        if not self.label and not self.offset:
+            # not a control flow instruction
+            return
+
         for base in [10, 8, 16, 2]:
             try:
                 self.offset = int(self.offset, base=base)
@@ -295,7 +309,7 @@ class Instruction(Addressable):
 
         if not self.symbolTable:
             raise Exception(
-                "ERROR: decoding control flow isntructions requires a symbol table to be passed to decodeInstruction()")
+                "ERROR: decoding control flow instructions requires a symbol table to be passed to decodeInstruction()")
 
         if self.label in self.symbolTable:
             self.offset = self.symbolTable.get(self.label, 0).address - self.address >> 5

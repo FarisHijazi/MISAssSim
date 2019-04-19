@@ -71,6 +71,7 @@ def makeGUI(startText: str):
     app.setExpand("both")
     app.setFont(14)
 
+    sim.gui = app
 
     def openFile():
         global outfile
@@ -146,45 +147,16 @@ def makeGUI(startText: str):
     fileMenus = ["Open", "Save", "Save as...", "-", "Close"]
     app.addMenuList("File", fileMenus, menuPress)
 
-    app.startScrollPane("regs",row=0,column=2)
-    for i, name, value, rep in sim.regfile.items():
-        # app.addLabel(name + "_name", startText=name, row=i, column=1, colspan=1, selectable=False)
-        # app.setEntry(name, value)
-        # app.setLabel(name, name + '\t')
-        
-        def onReprButton(btnName):
-            sim.regfile.cycleRep(i)
-            sim.redisplayReg()
-        
-        app.addButton(name, func=onReprButton)
-        app.entry(name + "_entry", value=value, row=i, column=2, colspan=6)
-        app.addLabel(name + "_rep", text=rep, row=i, column=3, colspan=1, selectable=False)
+    # building regfile gui
+    app.startScrollPane(sim.regfile.name, row=0, column=2)
+    sim.regfile.buildGUI()
 
-    app.stopScrollPane()
+    # building memory gui
+    app.startScrollPane(sim.mem.name, row=1)
+    sim.mem.buildGUI()
 
-    # Parameters passed are (row    column  columnSpan)
-    app.startScrollPane("memPane", row=1)
-    greyToggle = True
-    for x, name, value, rep in sim.mem.items():
-        # app.addLabel(str(x), "", row=x, column=1, colspan=4)
-        
-        def onReprButtonMem(btnName):
-            sim.mem.cycleRep(i)
-            sim.redisplayReg()
-        
-        app.addButton(name, func=onReprButtonMem)
+    app.addScrolledTextArea("console", row=1, column=1, colspan=2)
 
-        app.entry(name+"_entry", value=value, row=x)
-        # app.setLabel(name, name + '\t')
-        if greyToggle:
-            app.setEntryBg(name+"_entry", "grey")
-        greyToggle = not greyToggle
-    app.stopScrollPane()
-
-    app.addScrolledTextArea("console",row=1,column=1,colspan=2)
-
-    sim.redisplayReg()
-    sim.redisplayMem()
 
 
     tools = ["Compile", "Execute", "Execute Next"]

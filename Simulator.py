@@ -4,7 +4,7 @@ from AssembledFile import AssembledFile
 printContent = False
 
 def parseFloatStr(string):
-    return 0 if not string else 0 # TODO:
+    return 0 if not string else int(string, 2) # TODO:
 def parseDecStr(string):
     return 0 if not string else int(string)
 def parseHexStr(string):
@@ -12,7 +12,7 @@ def parseHexStr(string):
 def parseBinStr(string):
     return 0 if not string else int(string, 2)
 def parseAsciiStr(string):
-    return 0 if not string else 0 #TODO:
+    return 0 if not string else ord(string)
 
 representationParsers = {
     'fp': parseFloatStr,
@@ -28,26 +28,25 @@ addressBits = 64
 addressBytes = addressBits//8
 representationFormatter = {
     # TODO: replace those '' with '0's, and make the entries in the gui wider
-    'fp': lambda val: re.sub(r'\s', '', format(val, str(addressBits)+'b')), #TODO: format to floating point
+    'fp': lambda val: re.sub(r'\s', '', format(val, str(addressBits)+'f')), #TODO: format to floating point
     'hex': lambda val: re.sub(r'\s', '', format(val, str(addressBytes//2)+'x')),
     'bin': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'b')),
     'dec': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'d')),
-    'ascii': lambda val: re.sub(r'\s', '', format(val, str(addressBytes//2)+'x')), #TODO: this is bs, just a place holder
+    'ascii': lambda val: (chr(val)),
 }
 
 
 class Simulator:
-
-    reps = ['fp', 'hex', 'bin', 'dec', 'ascii']
-
     def __init__(self, assembledFile=None, gui=None):
-        self.regfile = Simulator.Regfile("gp")
-        self.mem = Simulator.Mem(size=32)
+        self.regfile = Storage(sim=self, name="gp")
+        self.mem = Mem(sim=self, name="Mem", size=32)
         self.pc = 0  # the Prorgam Counter
         self.assembledFile = assembledFile
         self.gui = gui
         Simulator.sim = self
-        self.updateMemFromGUI()
+
+        self.regfile.updateFromGUI()
+        self.mem.updateFromGUI()
         print(self.regfile)
 
 
@@ -55,8 +54,8 @@ class Simulator:
         """ resets the simulator, preparing it for a new file """
         self.__init__(*args, **kwargs)
         if self.gui:
-            self.updateMemFromGUI()
-            self.updateRegsFromGUI()
+            self.regfile.updateFromGUI()
+            self.mem.updateFromGUI()
         # reset memory and stuff
 
     def log(self, *args):
@@ -77,7 +76,8 @@ class Simulator:
             print("reached end of .text segment")
             return
 
-        self.updateMemFromGUI()
+        self.mem.updateFromGUI()
+        self.regfile.updateFromGUI()
 
         next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
         self.executeInstruction(next_instruction)
@@ -88,8 +88,8 @@ class Simulator:
         
         self.pc += 1
 
-        self.redisplayReg()
-        self.redisplayMem()
+        self.regfile.redisplay()
+        self.mem.redisplay()
 
 
     def runAll(self):
@@ -97,8 +97,8 @@ class Simulator:
         if self.assembledFile is None:
             raise Exception("no assembled file, must compile")
         else:
-            self.updateMemFromGUI()
-            self.updateRegsFromGUI()
+            self.regfile.updateFromGUI()
+            self.mem.updateFromGUI()
 
             instructions = self.assembledFile.directiveSegments.get('.text', [])
             for instr in instructions:
@@ -110,189 +110,197 @@ class Simulator:
                             '\nRegFile: {1}'.format(str(instr), str(self.regfile)))
                     self.pc += 1
 
-            self.redisplayReg()
-            self.redisplayMem()
+            self.regfile.redisplay()
+            self.mem.redisplay()
 
 
-    def updateRegsFromGUI(self):
-        self.gui.openScrollPane("regs")
-        for i, name, value, rep in self.regfile.items():
-            guistr = self.gui.getEntry(name+"_entry")
-            self.regfile[i] = representationParsers.get(rep)(guistr)
-        self.gui.stopScrollPane()
+class Storage:
+
+    # format of the reg file: (value, name, representation)
+    # representation will be one of: ('fp', 'int', 'hex', 'bin', 'dec')
+    initializers = {
+        "gp": (32, ['r{}'.format(i) for i in range(32)], ['dec']),
+        "e": (64, ['e{}'.format(i) for i in range(64)], ['dec']),
+        "c": (64, ['c{}'.format(i) for i in range(64)], ['dec']),
+        "fp": (64, ['f{}'.format(i) for i in range(64)], ['fp']),
+        "Mem": (64, ['Mem{}'.format(i) for i in range(64)], ['hex']),
+
+    }
+
+    reps = ['fp', 'hex', 'bin', 'dec', 'ascii']
+
+    # (width in bits)
+
+    def __init__(self, sim: Simulator, size:int=32, name:str=None, initializer=None):
+        # NOTE: name will be used as the title in appjar, must be unique
+        self.name = name  # the name of THIS storage object (mem, gp, e, c, fp)
         
-        self.redisplayMem()
+        init = Storage.initializers.get(name, None)
+
+        if initializer is not None:
+            init = initializer
+        
+        size, names, reps = init
+
+        self.size = size
+        self.__names__ = names
+        self.__reps__ = reps * size
 
 
-    def updateMemFromGUI(self):
-        if self.gui is None:
-            print("WARNING: simulator trying to update regs from gui but no gui object")
+        self.sim = sim
+
+        if not hasattr(self, '__names__'):
+            self.__names__ = names  # list of __names__ ['r0', 'r1', 'r2'...]
+
+        if not hasattr(self, '__values__'):
+            self.__values__ = [0] * size
+
+        # self.representationParsers = representations
+        # the representation, but as a number, translate to string using Storage.reps
+        self.__repIndexes__ = list(map(lambda idx: Storage.reps.index(idx), self.__reps__))
+        self.__current__ = 0
+        
+
+    def items(self, stringify=False):
+        """
+        returns a list containing the info for each register
+        :return: (index, name: str, value: int, representation: str)
+        """
+        if not stringify:
+            return zip(range(len(self.__names__)), self.__names__, self.__values__, self.__reps__)
+        return zip(map(str, range(len(self.__names__))), self.__names__, map(str, self.__values__), self.__reps__)
+
+    def buildGUI(self):
+        #NOTE: scrollPane must already be opened before calling this method
+        # building memory gui
+        greyToggle = False
+        for i, name, value, rep in self.items():
+            
+            
+            self.sim.gui.addButton(name, column=1, colspan=1,
+                func = lambda btnName: self.cycleRep(self.__names__.index(btnName))
+            )
+            self.sim.gui.entry(name+"_entry", value=value, row=i, column=2, colspan=10)
+            self.sim.gui.addLabel(name + "_rep", text=rep, row=i, column=3, colspan=1, selectable=False)
+            
+            if greyToggle:
+                self.sim.gui.setEntryBg(name+"_entry", "grey")
+                self.sim.gui.setButtonBg(name, "grey")
+                self.sim.gui.setLabelBg(name+"_rep", "grey")
+            greyToggle = not greyToggle
+        self.sim.gui.stopScrollPane()
+        self.redisplay()
+
+
+    def updateFromGUI(self):
+        if self.sim.gui is None:
+            print("WARNING: simulator trying to update from gui but no gui object")
             return
-        self.gui.openScrollPane("regs")
+        self.sim.gui.openScrollPane(self.name)
 
         # iterating over the names and getting the values
-        for i, name, value, rep in self.mem.items():
-            guistr = self.gui.getEntry(name+"_entry")
-            self.mem[i] = representationParsers.get(rep)(guistr)
+        for i, name, value, rep in self.items():
+            guistr = self.sim.gui.getEntry(name+"_entry")
+            self[i] = representationParsers.get(rep)(guistr)
 
-        self.gui.stopScrollPane()
-        self.redisplayMem()
+        self.sim.gui.stopScrollPane()
+        self.redisplay()
 
-
-    def redisplayMem(self):
-        if self.gui is None:
+    
+    def redisplay(self, index=-1):
+        if self.sim.gui is None:
             # raise Exception("No gui object")
             if printContent:
-                print("Mem content: {}".format(self.mem.theBytes))
-            pass
-        else: # if gui:
-            self.gui.openScrollPane("memPane")
-
-            for i, name, value, rep in self.mem.items():
-                formatted = representationFormatter.get(rep)(value)
-                self.gui.setEntry(name+"_entry", formatted)
-                # self.gui.stopScrollPane()
-
-    def redisplayReg(self):
-        if self.gui is None:
-            # raise Exception("No gui object")
-            if printContent:
-                print("Register content: {}".format(self.regfile))
+                print("Content: {}".format(self))
             pass
         else:
-            self.gui.openScrollPane("regs")
+            self.sim.gui.openScrollPane(self.name)
 
-            for i, name, value, rep in self.regfile.items():
-                formatted = representationFormatter.get(rep)(value) #TODO: use a formatter, have a dictionary just like the parser (but the opposite)
-                self.gui.setEntry(name+"_entry", formatted)
-            self.gui.stopScrollPane()
-
-
-    class Regfile:
-        # (width in bits)
-
-        # format of the reg file: (value, name, representation)
-        # representation will be one of: ('fp', 'int', 'hex', 'bin', 'dec')
-        initializer = {
-            "gp": (32, ['r{}'.format(i) for i in range(32)], ['dec'] * 32),
-            "e": (64, ['e{}'.format(i) for i in range(64)], ['dec'] * 64),
-            "c": (64, ['c{}'.format(i) for i in range(64)], ['dec'] * 64),
-            "fp": (64, ['f{}'.format(i) for i in range(64)], ['fp'] * 64)
-        }
+            for i, name, value, rep in self.items():
+                if index == -1 or i == index:
+                    formatted = representationFormatter.get(rep)(value)
+                    self.sim.gui.setEntry(name + "_entry", formatted)
+                    self.sim.gui.setLabel(name + "_rep", rep)
+            self.sim.gui.stopScrollPane()
 
 
-        def __init__(self, name: str):
-            """ :param name: decides the type of __regs__ to make. either one of: "gp", "e", "c", "fp" """
-            # if someString in initializer:
+    def cycleRep(self, index):
+        """
+        :param index - index of the value
+        """
+        self.updateFromGUI()
 
-            length, names, representations = Simulator.Regfile.initializer.get(name)
+        # increment the repIndex
+        self.__repIndexes__[index] = (self.__repIndexes__[index] + 1) % len(Storage.reps)
+        # update rep str
+        self.__reps__[index] = Storage.reps[self.__repIndexes__[index]] # map repr number to repr str
 
-            self.name = name  # the name of THIS regfile (gp, e, c, fp)
-
-            self.__names__ = names  # list of reg __names__ ['r0', 'r1', 'r2'...]
-            self.__regs__ = [0] * length
-            # self.representationParsers = representations
-            self.__reps__ = representations
-            # the representation, but as a number, translate to string using Simulator.reps
-            self.__repIndexes__ = list(map(lambda idx: Simulator.reps.index(idx), self.__reps__))
-            
-            self.__regs__[1] = 1  # DEBUG: FIXME: just for testing
+        self.redisplay(index)
+        return self.__reps__[index]
 
 
-        def items(self, stringify=False):
-            """
-            returns a list containing the info for each register
-            :return: (index, name: str, value: int, representation: str)
-            """
-            if not stringify:
-                return zip(range(len(self.__names__)), self.__names__, self.__regs__, self.__reps__)
-            return zip(map(str, range(len(self.__names__))), self.__names__, map(str, self.__regs__), self.__reps__)
+    def set(self, index, newVal, instruction: Instruction = None):
+        if type(index) is str:  # this line allows for indexing by reg __names__ (as strings)
+            index = self.__names__.index(index)
+
+        # TODO: do something here to check the instruction and to auto-set the rep depending on the instruction
+        print("set {}: {} -> {}".format(self.__names__[index], self.__values__[index], newVal))
+        self.__values__[index] = newVal
+        self.redisplay(index)
 
 
-        def __setitem__(self, key, value):
-            self.set(key, value)
+    def get(self, index: int):
+        if type(index) is str:  # this line allows for indexing by reg __names__ (as strings)
+            index = self.__names__.index(index)
+        return self.__values__[index]
+
+    def __setitem__(self, key, value):
+        self.set(key, value)
 
 
-        def __getitem__(self, key):
-            return self.get(key)
+    def __getitem__(self, key):
+        return self.get(key)
 
 
-        def set(self, index, newVal, instruction: Instruction = None):
-            if type(index) is str:  # this line allows for indexing by reg __names__ (as strings)
-                index = self.__names__.index(index)
+    def __str__(self):
+        return "{}:\n\t{}".format(self.name,
+                                                "\n\t".join(map(str, zip(self.__names__, self.__values__))))
 
-            # TODO: do something here to check the instruction and to auto-set the rep depending on the instruction
-            print("reg {}: {} -> {}".format(self.__names__[index], self.__regs__[index], newVal))
-            self.__regs__[index] = newVal
+    def __length__(self):
+        return len(self.__values__)
 
+    def __iter__(self):
+        return self
 
-        def get(self, regIndex: int):
-            return self.__regs__[regIndex]
-
-        def cycleRep(self, regIndex):
-            # increment the repIndex
-            self.__repIndexes__[regIndex] = (self.__repIndexes__[regIndex]+1)%len(Simulator.reps)
-            # update rep
-            self.__reps__[regIndex] = Simulator.reps[self.__repIndexes__[regIndex]] # use the map
-            return self.__reps__[regIndex]
-
-
-        def __str__(self):
-            return "{} register file:\n\t{}".format(self.name,
-                                                    "\n\t".join(map(str, zip(self.__names__, self.__regs__))))
-
-
-    class Mem:
-        def __init__(self, size=2**64):
-            self.theBytes = [0] * size
-            self.__names__ = ['Mem{}'.format(i) for i in range(size)]
-            self.__repIndexes__ = [0] * size # the representation, but as a number, translate to string using Simulator.reps
-            self.__reps__ = list(map(lambda idx: Simulator.reps[idx], self.__repIndexes__))
+    def next(self): # Python 3: def __next__(self)
+        if self.__current__ > len(self.__values__)-1:
             self.__current__ = 0
+            raise StopIteration
+        else:
+            self.__current__ += 1
+            return self.__values__[self.__current__]
 
 
-        def set(self, address, byteElements):
-            for b in [byteElements]: # if multiple elements
-                self.theBytes[address] = b
-                address += 1
 
-        def items(self):
-            """
-            the names are the same names used in the gui
-            :returns the items (index, name:str, byte, rep)
-            """
-            return zip(range(len(self.theBytes)), self.__names__, self.theBytes, self.__reps__)
+class Regfile(Storage):
 
-        def get(self, address, nbytes=1):
-            return self.theBytes[address:address + nbytes]
+    def __init__(self, *args, **kwargs):
+        """ :param name: decides the type of __values__ to make. either one of: "gp", "e", "c", "fp" """
+        # if someString in initializers:
+        super(Storage, self).__init__(*args, **kwargs)
 
-        def cycleRep(self, regIndex):
-            # increment the repIndex
-            self.__repIndexes__[regIndex] = (self.__repIndexes__[regIndex]+1)%len(Simulator.reps)
-            # update rep
-            self.__reps__[regIndex] = Simulator.rep[self.__repIndexes__[regIndex]] # use the map
-            return self.__reps__[regIndex]
-
-        def __setitem__(self, key, value):
-            self.set(key, value)
+        self.__values__[1] = 1  # DEBUG: FIXME: just for testing
 
 
-        def __getitem__(self, key):
-            return self.get(key)
 
-        def __length__(self):
-            return len(self.theBytes)
+class Mem(Storage):
+    def __init__(self, *args, **kwargs):
+        """ :param name: decides the type of __values__ to make. either one of: "gp", "e", "c", "fp" """
+        super().__init__(*args, **kwargs)
 
-        def __iter__(self):
-            return self
 
-        def next(self): # Python 3: def __next__(self)
-            if self.__current__ > len(self.theBytes)-1:
-                self.__current__ = 0
-                raise StopIteration
-            else:
-                self.__current__ += 1
-                return self.theBytes[self.__current__]
+    def set(self, address, byteElements):
+        for b in [byteElements]: # if multiple elements
+            self.__values__[address] = b
+            address += 1
 
-        def __str__(self):
-            return "Memory:\n\t{}".format("\n\t".join(map(str, zip(range(len(self.theBytes)), self.theBytes))))

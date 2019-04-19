@@ -155,7 +155,7 @@ def makeGUI(startText: str):
     app.addMenuList("File", fileMenus, menuPress)
 
     app.startScrollPane("regs")
-    for i, name, value, rep in sim.sim.regfile.items():
+    for i, name, value, rep in sim.regfile.items():
         # app.addLabel(name + "_name", startText=name, row=i, column=1, colspan=1, selectable=False)
         app.addLabelEntry(name, row=i, column=2, colspan=6)
         app.setLabel(name, name + '\t')

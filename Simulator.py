@@ -4,18 +4,14 @@ from AssembledFile import AssembledFile
 
 def parseFloatStr(string):
     return 0  # TODO:
-
-
 def parseDecStr(string):
     return int(string)
-
-
 def parseHexStr(string):
     return int(string, 16)
-
-
 def parseBinStr(string):
     return int(string, 2)
+def parseAsciiStr(string):
+    return 0 #TODO:
 
 
 representationParsers = {
@@ -23,6 +19,7 @@ representationParsers = {
     'hex': parseHexStr,
     'bin': parseBinStr,
     'dec': parseDecStr,
+    'ascii': parseAsciiStr,
 }
 
 
@@ -41,8 +38,9 @@ class Simulator:
     def init(self, *args, **kwargs):
         """ resets the simulator, preparing it for a new file """
         self.__init__(*args, **kwargs)
-        self.updateMemFromGUI()
-        self.updateRegsFromGUI()
+        if self.gui:
+            self.updateMemFromGUI()
+            self.updateRegsFromGUI()
         # reset memory and stuff
 
 
@@ -76,6 +74,7 @@ class Simulator:
             raise Exception("no assembled file, must compile")
         else:
             self.updateMemFromGUI()
+
             instructions = self.assembledFile.directiveSegments.get('.text', [])
             for instr in instructions:
                 if self.pc < len(instructions):
@@ -88,42 +87,42 @@ class Simulator:
             self.redisplayMem()
 
 
+    def updateRegsFromGUI(self):
+        self.gui.openScrollPane("regs")
+        for i, name, value, rep in self.regfile.items():
+            guistr = self.gui.getEntry(name)
+            self.regfile[i] = representationParsers.get(rep)(guistr)
+        self.gui.stopScrollPane()
+        pass
+
+
     def updateMemFromGUI(self):
         if self.gui is None:
             print("WARNING: simulator trying to update regs from gui but no gui object")
             return
         self.gui.openScrollPane("regs")
 
-        for i, name, value, rep in self.regfile.items():
+        # iterating over the names and getting the values
+        for i in range(len(self.mem.theBytes)):
+            rep = 'dec' # TODO: later create mem.items() so each cell has a representation
+            name = "Mem{0}".format(i)
             guistr = self.gui.getEntry(name)
-            representationParsers.get(rep)(guistr)
+            self.mem[i] = representationParsers.get(rep)(guistr)
 
         self.gui.stopScrollPane()
-
-
-    def updateRegsFromGUI(self):
-        # self.gui.openScrollPane("memPane")
-        #
-        # for i, name, value, rep in self.regfile.items():
-        #     guistr = self.gui.getEntry(name, value)
-        #     representationParsers.get(rep)(guistr)
-        #
-        # self.gui.stopScrollPane()
-        pass
 
 
     def redisplayMem(self):
         if self.gui is None:
             # raise Exception("No gui object")
             print("Register content:".format(self.regfile))
-        else:
-            # This is a naaive way it can be optimized, no time
+        else: # if gui:
             self.gui.openScrollPane("memPane")
+
             for index in range(len(self.mem.theBytes)):
-                name = str(index) + "c1"
+                name = "Mem{0}".format(index)
                 self.gui.setLabel(name, self.mem.theBytes[index])
                 # self.gui.stopScrollPane()
-
 
     def redisplayReg(self):
         if self.gui is None:
@@ -202,13 +201,36 @@ class Simulator:
     class Mem:
         def __init__(self):
             self.theBytes = ["00000000"] * 32
+            self.current = 0
 
-
-        def write(self, address, byteElements):
-            for b in byteElements:
+        def set(self, address, byteElements):
+            for b in [byteElements]: # if multiple elements
                 self.theBytes[address] = b
                 address += 1
 
+        def get(self, address, nbytes=1):
+            return self.theBytes[address:address + nbytes]
+
+        def __setitem__(self, key, value):
+            self.set(key, value)
+
+
+        def __getitem__(self, key):
+            return self.get(key)
+
+        def __length__(self):
+            return len(self.theBytes)
+
+        def __iter__(self):
+            return self
+
+        def next(self): # Python 3: def __next__(self)
+            if self.current > len(self.theBytes)-1:
+                self.current = 0
+                raise StopIteration
+            else:
+                self.current += 1
+                return self.theBytes[self.current]
 
         def __str__(self):
             return "Memory:\n\t{}".format("\n\t".join(map(str, zip(range(len(self.theBytes)), self.theBytes))))

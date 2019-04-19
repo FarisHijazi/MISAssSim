@@ -72,14 +72,6 @@ def makeGUI(startText: str):
     app.setFont(14)
 
 
-    def redisplayMem():
-        # This is a naaive way it can be optimized, no time
-        app.openScrollPane("memPane")
-        for index in range(len(sim.mem.theBytes)):
-            app.setEntry("Mem{0}".format(index), sim.mem.theBytes[index])
-        app.stopScrollPane()
-
-
     def openFile():
         global outfile
         openfilename = askopenfilename()
@@ -179,10 +171,8 @@ def makeGUI(startText: str):
     app.addScrolledTextArea("console",row=1,column=1,colspan=2)
 
     sim.redisplayReg()
-    redisplayMem()
+    sim.redisplayMem()
 
-    # app.setLabelBg("Registers", "grey")
-    # app.setLabelBg("Registers2", "grey")
 
     tools = ["Compile", "Execute", "Execute Next"]
     app.addToolbar(tools, toolPress)
@@ -190,9 +180,9 @@ def makeGUI(startText: str):
     app.go()
 
 
-# Assembler Main code
+#  code
 
-# argument parsing
+# === argument parsing ===
 import argparse
 
 parser = argparse.ArgumentParser()

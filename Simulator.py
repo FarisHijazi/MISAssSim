@@ -257,6 +257,12 @@ class Storage:
 
 
     def set(self, index, newVal, instruction: Instruction = None):
+
+        if newVal == True:
+            newVal = 1
+        elif newVal == False:
+            newVal = 0
+
         if type(index) is str:  # this line allows for indexing by reg __names__ (as strings)
             index = self.__names__.index(index)
 
@@ -267,9 +273,17 @@ class Storage:
 
 
     def get(self, index: int):
+
         if type(index) is str:  # this line allows for indexing by reg __names__ (as strings)
             index = self.__names__.index(index)
-        return self.__values__[index]
+        value = self.__values__[index]
+
+        if value == True:
+            value = 1
+        elif value == False:
+            value = 0
+
+        return value
 
 
     def __setitem__(self, key, value):

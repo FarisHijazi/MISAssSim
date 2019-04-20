@@ -13,12 +13,20 @@ def compileASM(asm_text, outfile):
     # print cpu_out
     fname, ext = os.path.splitext(outfile)
 
+    # writing binary data to file
+    with open(fname + ".bin", "wb") as binfile:
+        binfile.seek(0)
+        binfile.truncate()
+        for word in map(lambda x: long_to_bytes(int(x, base=16)), assembledFile.hex):
+            binfile.write(word)
+
+    # writing hex string file
     with open(fname + ".hex", "wb") as hexfile:
         hexfile.seek(0)
         hexfile.truncate()
-        for word in map(lambda x: long_to_bytes(int(x, base=16)), assembledFile.hex):
+        for word in x, assembledFile.hex:
             hexfile.write(word)
-        hexfile.close()
+
 
     print(assembledFile.hex)
 

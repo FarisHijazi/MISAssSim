@@ -1,0 +1,1 @@
+python MainProgram.py --file tests/program.asm

@@ -1,1 +1,1 @@
-python MainProgram.py --file -r \program.asm
+python MainProgram.py --file -r tests\program.asm

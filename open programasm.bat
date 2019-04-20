@@ -1,1 +1,0 @@
-python ./MainProgram.py --file=program.asm

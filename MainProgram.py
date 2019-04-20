@@ -26,11 +26,9 @@ def compileASM(asm_text, outfile):
         hexfile.truncate()
         hexfile.write("\n".join(assembledFile.hex))
 
-
     print(assembledFile.hex)
-
-    print("AssembledFile:" + assembledFile.text)
     return assembledFile
+
 
 def long_to_bytes(val, endianness='big'):
     from binascii import unhexlify

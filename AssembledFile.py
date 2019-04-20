@@ -47,6 +47,8 @@ class AssembledFile:
             label_match = re.search(r'^@[a-zA-z][a-zA-z\d_]+', line)  # early label
             dataDirective_match = re.search(r'\.' + "|".join(DataBlock.directives.keys()), line)
 
+            line = line.lower() # tolowercase to allow for all cases of instructions (must be after parsing the label)
+
             if line and label_match:  # label
                 if line in self.symbolTable:
                     raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))

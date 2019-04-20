@@ -10,7 +10,6 @@ import re
 
 # TODO: fix issue: the dictionaries, sometimes imm='r0' or wtver, BIG PROBLEM! test mul for an example
 
-outfile = "Untitled"
 fileexists = False
 
 # opcode 37 op:(func, imm_L, (imm_R|p), imm)

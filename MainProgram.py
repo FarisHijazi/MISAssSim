@@ -21,11 +21,10 @@ def compileASM(asm_text, outfile):
             binfile.write(word)
 
     # writing hex string file
-    with open(fname + ".hex", "wb") as hexfile:
+    with open(fname + ".hex", "w") as hexfile:
         hexfile.seek(0)
         hexfile.truncate()
-        for word in x, assembledFile.hex:
-            hexfile.write(word)
+        hexfile.write("\n".join(assembledFile.hex))
 
 
     print(assembledFile.hex)
@@ -228,7 +227,7 @@ if cmd_args.text:
 if cmd_args.file and os.path.isfile(cmd_args.file):
     with open(cmd_args.file, 'r') as file:
         cmd_args.startText = file.read()
-        _assembledFile = compileASM(cmd_args.startText)
+        _assembledFile = compileASM(cmd_args.startText, cmd_args.outfile)
     # cmd_args.file = file
 
     sim.init(_assembledFile)

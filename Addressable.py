@@ -339,46 +339,60 @@ class Instruction(Addressable):
 
 
     def execute(self, sim):
-        # Member: FARIS HIJAZI
+        # Taha
         if self.opcode in Instruction.sections[2]:
             if self.opcode == 2:  # J
                 sim.pc += self.offset
-            if self.opcode == 3:  # JAL
-                sim.regfile[31] = sim.pc
-                sim.pc += self.offset
-            if self.opcode == 8:  # BEQI
-                pass
-            if self.opcode == 9:  # BNEI
-                pass
-            if self.opcode == 10:  # BLTI
-                pass
-            if self.opcode == 11:  # BGEI
-                pass
-            if self.opcode == 12:  # BLTUI
-                pass
-            if self.opcode == 13:  # BGEUI
-                pass
-            if self.opcode == 14:  # JR
-                pass
-            if self.opcode == 15:  # JALR
-                pass
-            if self.opcode == 16:  # BEQ
-                pass
-            if self.opcode == 17:  # BNE
-                pass
-            if self.opcode == 18:  # BLT
-                pass
-            if self.opcode == 19:  # BGE
-                pass
-            if self.opcode == 20:  # BLTU
-                pass
-            if self.opcode == 21:  # BGEU
-                pass
-            if self.opcode == 22:  # LOOP
-                pass
-            if self.opcode == 23:  # LOOPD
-                pass
-            pass  # do
+            elif self.opcode == 3:  # JAL
+                sim.regfile[31] = self.offset
+            elif self.opcode == 8:  # BEQI
+                if sim.regfile[self.rai] == self.imm:
+                    sim.pc += self.offset
+            elif self.opcode == 9:  # BNEI
+                if sim.regfile[self.rai] != self.imm:
+                    sim.pc += self.offset
+            elif self.opcode == 10:  # BLTI
+                if sim.regfile[self.rai] < self.imm:
+                    sim.pc += self.offset
+            elif self.opcode == 11:  # BGEI
+                if sim.regfile[self.rai] >= self.imm:
+                    sim.pc += self.offset
+            elif self.opcode == 12:  # BLTUI
+                if sim.regfile[self.rai] <= self.imm:
+                    sim.pc += self.offset
+            elif self.opcode == 13:  # BGEUI
+                if sim.regfile[self.rai] >= self.imm:
+                    sim.pc += self.offset
+            elif self.opcode == 14:  # JR
+                sim.pc = sim.regfile[self.rai] + self.offset
+            elif self.opcode == 15:  # JALR
+                sim.pc = sim.regfile[self.rai] + self.offset
+                sim.regfile[self.rbi] = sim.pc + 4
+            elif self.opcode == 16:  # BEQ
+                if sim.regfile[self.rai] == sim.regfile[self.rbi]:
+                    sim.pc += self.offset
+            elif self.opcode == 17:  # BNE
+                if sim.regfile[self.rai] != sim.regfile[self.rbi]:
+                    sim.pc += self.offset
+            elif self.opcode == 18:  # BLT
+                if sim.regfile[self.rai] < sim.regfile[self.rbi]:
+                    sim.pc += self.offset
+            elif self.opcode == 19:  # BGE
+                if sim.regfile[self.rai] > sim.regfile[self.rbi]:
+                    sim.pc += self.offset
+            elif self.opcode == 20:  # BLTU
+                if sim.regfile[self.rai] < sim.regfile[self.rbi]:
+                    sim.pc += self.offset
+            elif self.opcode == 21:  # BGEU
+                if sim.regfile[self.rai] > sim.regfile[self.rbi]:
+                    sim.pc += self.offset
+            elif self.opcode == 22:  # LOOP
+                if sim.regfile[self.rai] != sim.regfile[self.rbi]:
+                    sim.regfile[self.rbi] += 1
+            elif self.opcode == 23:  # LOOPD
+                if sim.regfile[self.rai] != sim.regfile[self.rbi]:
+                    sim.regfile[self.rbi] -= 1
+
         elif self.opcode in Instruction.sections[3]:
             if self.opcode in {24, 25}:
                 if self.opcode == 24:
@@ -392,67 +406,67 @@ class Instruction(Addressable):
                         pass  # do
                     elif self.func == 4:  # LB
                         index = sim.regfile[self.rai] + self.imm
-                        binaryString = sim.mem.theBytes[index]
+                        binaryString = sim.mem[index]
                         print("Binary String : " + binaryString)
-                        sim.regfile.set(self.rbi, int(binaryString, 2))
+                        sim.regfile[self.rbi] = int(binaryString, 2)
                     elif self.func == 5:  # LH
                         index = sim.regfile[self.rai] + self.imm
-                        binaryString = sim.mem.theBytes[index]
-                        binaryString1 = sim.mem.theBytes[index + 1]
+                        binaryString = sim.mem[index]
+                        binaryString1 = sim.mem[index + 1]
                         finalString = binaryString + binaryString1
-                        sim.regfile.set(self.rbi, int(finalString, 2))
+                        sim.regfile[self.rbi] = int(finalString, 2)
                     elif self.func == 6:  # LW
                         index = sim.regfile[self.rai] + self.imm
-                        binaryString = sim.mem.theBytes[index]
-                        binaryString1 = sim.mem.theBytes[index + 1]
-                        binaryString2 = sim.mem.theBytes[index + 2]
-                        binaryString3 = sim.mem.theBytes[index + 3]
+                        binaryString = sim.mem[index]
+                        binaryString1 = sim.mem[index + 1]
+                        binaryString2 = sim.mem[index + 2]
+                        binaryString3 = sim.mem[index + 3]
                         finalString = binaryString + binaryString1 + binaryString2 + binaryString3
-                        sim.regfile.set(self.rbi, int(finalString, 2))
+                        sim.regfile[self.rbi] = int(finalString, 2)
                     elif self.func == 7:  # LD
                         index = sim.regfile[self.rai] + self.imm
-                        binaryString = sim.mem.theBytes[index]
-                        binaryString1 = sim.mem.theBytes[index + 1]
-                        binaryString2 = sim.mem.theBytes[index + 2]
-                        binaryString3 = sim.mem.theBytes[index + 3]
-                        binaryString4 = sim.mem.theBytes[index + 4]
-                        binaryString5 = sim.mem.theBytes[index + 5]
-                        binaryString6 = sim.mem.theBytes[index + 6]
-                        binaryString7 = sim.mem.theBytes[index + 7]
+                        binaryString = sim.mem[index]
+                        binaryString1 = sim.mem[index + 1]
+                        binaryString2 = sim.mem[index + 2]
+                        binaryString3 = sim.mem[index + 3]
+                        binaryString4 = sim.mem[index + 4]
+                        binaryString5 = sim.mem[index + 5]
+                        binaryString6 = sim.mem[index + 6]
+                        binaryString7 = sim.mem[index + 7]
                         finalString = binaryString + binaryString1 + binaryString2 + binaryString3 + binaryString4 + binaryString5 + binaryString6 + binaryString7
-                        sim.regfile.set(self.rbi, int(finalString, 2))
+                        sim.regfile[self.rbi] = int(finalString, 2)
                 elif self.opcode == 25:
                     if self.func == 0:  # SB
                         rValue = sim.regfile[self.rbi]
                         rValueBin = format(rValue, '064b')
                         index = sim.regfile[self.rai] + self.imm
-                        sim.mem.theBytes[index] = rValueBin[56:64]
+                        sim.mem[index] = rValueBin[56:64]
                     elif self.func == 1:  # SH
                         rValue = sim.regfile[self.rbi]
                         rValueBin = format(rValue, '064b')
                         index = sim.regfile[self.rai] + self.imm
-                        sim.mem.theBytes[index + 1] = rValueBin[56:64]
-                        sim.mem.theBytes[index] = rValueBin[48:56]
+                        sim.mem[index + 1] = rValueBin[56:64]
+                        sim.mem[index] = rValueBin[48:56]
                     elif self.func == 2:  # SW
                         rValue = sim.regfile[self.rbi]
                         rValueBin = format(rValue, '064b')
                         index = sim.regfile[self.rai] + self.imm
-                        sim.mem.theBytes[index + 3] = rValueBin[56:64]
-                        sim.mem.theBytes[index + 2] = rValueBin[48:56]
-                        sim.mem.theBytes[index + 1] = rValueBin[40:48]
-                        sim.mem.theBytes[index] = rValueBin[32:40]
+                        sim.mem[index + 3] = rValueBin[56:64]
+                        sim.mem[index + 2] = rValueBin[48:56]
+                        sim.mem[index + 1] = rValueBin[40:48]
+                        sim.mem[index] = rValueBin[32:40]
                     elif self.func == 3:  # SD
                         rValue = sim.regfile[self.rbi]
                         rValueBin = format(rValue, '064b')
                         index = sim.regfile[self.rai] + self.imm
-                        sim.mem.theBytes[index + 7] = rValueBin[56:64]
-                        sim.mem.theBytes[index + 6] = rValueBin[48:56]
-                        sim.mem.theBytes[index + 5] = rValueBin[40:48]
-                        sim.mem.theBytes[index + 4] = rValueBin[32:40]
-                        sim.mem.theBytes[index + 3] = rValueBin[24:32]
-                        sim.mem.theBytes[index + 2] = rValueBin[16:24]
-                        sim.mem.theBytes[index + 1] = rValueBin[8:16]
-                        sim.mem.theBytes[index] = rValueBin[0:8]
+                        sim.mem[index + 7] = rValueBin[56:64]
+                        sim.mem[index + 6] = rValueBin[48:56]
+                        sim.mem[index + 5] = rValueBin[40:48]
+                        sim.mem[index + 4] = rValueBin[32:40]
+                        sim.mem[index + 3] = rValueBin[24:32]
+                        sim.mem[index + 2] = rValueBin[16:24]
+                        sim.mem[index + 1] = rValueBin[8:16]
+                        sim.mem[index] = rValueBin[0:8]
             elif self.opcode == 26:  # LoadX
                 if self.func == 0:  # LBU
                     pass  # do
@@ -604,7 +618,7 @@ class Instruction(Addressable):
                     sim.regfile[self.rdi] = ((sim.regfile[self.rai] << self.imm_L) >> self.imm_R)
                 elif self.func == 2:  # SALR
                     #  rbi = ((rai << self.imm_L) >> self.imm_R)
-                    sim.regfile[self.rdi] = (sign_extend(sim.regfile[self.rai] << self.imm_L) >> self.imm_R)
+                    sim.regfile[self.rdi] = sign_extend((sim.regfile[self.rai] << self.imm_L) >> self.imm_R, 64)
                 elif self.func == 3:  # ROR  [ not sure about how to rotate bitwise ]
                     pass  # do
                 elif self.func == 8:  # MUL   [signed]
@@ -684,11 +698,11 @@ class Instruction(Addressable):
             if self.opcode == 42:
                 if self.p == 0:  # SINGLE PERCISION
                     if self.func == 0:  # ABS
-                        sim.regfile.set(self.rdi, abs(sim.regfile[self.rai]))
+                        sim.regfile[self.rdi] = abs(sim.regfile[self.rai])
                     elif self.func == 1:  # NEG
-                        sim.regfile.set(self.rdi, ~(sim.regfile[self.rai]))
+                        sim.regfile[self.rdi] = ~(sim.regfile[self.rai])
                     elif self.func == 2:  # SQRT
-                        sim.regfile.set(self.rdi, math.sqrt(sim.regfile[self.rai]))
+                        sim.regfile[self.rdi] = math.sqrt(sim.regfile[self.rai])
                     elif self.func == 4:  # CVTSD
                         pass  # do   # convert to single percision
                     elif self.func == 5:  # CVTSI
@@ -699,11 +713,11 @@ class Instruction(Addressable):
                         pass
                 elif self.p == 1:  # DOUBLE PERCISION
                     if self.func == 0:  # ABS
-                        sim.regfile.set(self.rdi, abs(sim.regfile[self.rai]))
+                        sim.regfile[self.rdi] = abs(sim.regfile[self.rai])
                     elif self.func == 1:  # NEG
-                        sim.regfile.set(self.rdi, ~(sim.regfile[self.rai]))
+                        sim.regfile[self.rdi] = ~(sim.regfile[self.rai])
                     elif self.func == 2:  # SQRT
-                        sim.regfile.set(self.rdi, math.sqrt(sim.regfile[self.rai]))
+                        sim.regfile[self.rdi] = math.sqrt(sim.regfile[self.rai])
                     elif self.func == 4:  # CVTSD
                         pass  # do   # convert to single percision
                     elif self.func == 5:  # CVTSI
@@ -713,15 +727,12 @@ class Instruction(Addressable):
                     elif self.func == 7:  # RINT
                         pass  # do
 
-
             # for self.opcode 43 FPU2
             elif self.opcode == 43:
                 if self.p == 0:  # SINGLE PERCISION
                     if self.func == 0:  # EQ
-                        sim.regfile.set(self.rdi, (sim.regfile[self.rai] == sim.regfile[self.rbi]))
+                        sim.regfile[self.rdi] = sim.regfile[self.rai] == sim.regfile[self.rbi]
                     elif self.func == 1:  # NE
-                        sim.regfile.set(self.rdi, (sim.regfile[self.rai] != sim.regfile[self.rbi]))
+                        sim.regfile[self.rdi] = sim.regfile[self.rai] != sim.regfile[self.rbi]
                     elif self.func == 2:  # LT
-                        sim.regfile.set(self.rdi, (sim.regfile[self.rai] and (
-                        sim.regfile[self.rai], sim.regfile[self.rbi], sim.regfile[self.rci])))
-
+                        sim.regfile[self.rdi] = sim.regfile[self.rai] and sim.regfile[self.rai], sim.regfile[self.rbi], sim.regfile[self.rci]

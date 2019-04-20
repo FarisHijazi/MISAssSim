@@ -29,17 +29,30 @@ representationParsers = {
 }
 
 import re
+
 # assuming the input value is a signed decimal value (TODO: this should become bytes)
 addressBits = 64
-addressBytes = addressBits//8
+addressBytes = addressBits // 8
+entrySize = 8  # in bytes
 representationFormatter = {
     # TODO: replace those '' with '0's, and make the entries in the gui wider
-    'fp': lambda val: re.sub(r'\s', '', format(val, str(addressBits)+'f')), #TODO: format to floating point
-    'hex': lambda val: re.sub(r'\s', '', format(val, str(addressBytes//2)+'x')),
-    'bin': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'b')),
-    'dec': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'d')),
-    'ascii': lambda val: (chr(val)),
+
+    'fp': lambda val: str(ctypes.c_ulong.from_buffer(ctypes.c_buffer(bytes(val), ctypes.sizeof(val))).value),
+    # TODO: format to floating point
+    'hex': lambda val: hex(ctypes.c_ulong.from_buffer(ctypes.c_ulong(val)).value),
+    'bin': lambda val: bin(ctypes.c_ulong.from_buffer(ctypes.c_ulong(val.sizeof(entrySize))).value),
+    'dec': lambda val: ctypes.c_ulong.from_buffer(ctypes.c_ulong(val)).value,
+    'ascii': lambda val: (chr(ctypes.c_ulong.from_buffer(ctypes.c_ulong(val)).value)),
 }
+
+# representationFormatter = {
+#     # TODO: replace those '' with '0's, and make the entries in the gui wider
+#     'fp': lambda val: ''.join(bin(ord(c)).replace('0b|0x|0o', '').rjust(8, '0') for c in struct.pack('!d', val)), #TODO: format to floating point
+#     'hex': lambda val: ''.join(bin(ord(c)).replace('0b|0x|0o', '').rjust(8, '0') for c in struct.pack('!d', val)),
+#     'bin': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'b')),
+#     'dec': lambda val: re.sub(r'\s', '', format(val, str(addressBytes)+'d')),
+#     'ascii': lambda val: (chr(val)),
+# }
 
 
 class Simulator:
@@ -80,21 +93,21 @@ class Simulator:
         if self.assembledFile is None:
             raise Exception("no assembled file, must compile")
 
-        if self.pc >= len(self.assembledFile.directiveSegments.get('.text')):
+        if (self.pc >> 2) >= len(self.assembledFile.directiveSegments.get('.text')):
             print("reached end of .text segment")
             return
 
         self.mem.updateFromGUI()
         self.regfile.updateFromGUI()
 
-        next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc]
+        next_instruction = self.assembledFile.directiveSegments.get('.text')[self.pc >> 2]
         self.executeInstruction(next_instruction)
 
         print('step() Run instr: "{0}"'.format(str(next_instruction.lineStr)))
         if printContent:
-            print('RegFile: {1}'.format(str(self.regfile)))
-        
-        self.pc += 1
+            print('RegFile: {1}'.format(self.regfile))
+
+        self.pc += 4
 
         self.regfile.redisplay()
         self.mem.redisplay()
@@ -109,14 +122,14 @@ class Simulator:
             self.mem.updateFromGUI()
 
             instructions = self.assembledFile.directiveSegments.get('.text', [])
-            for instr in instructions:
-                if self.pc < len(instructions):
-                    self.executeInstruction(instr)
 
-                    if printContent:
-                        print('Running instr: "{0}"'
-                            '\nRegFile: {1}'.format(str(instr), str(self.regfile)))
-                    self.pc += 1
+            if (self.pc >> 2) < len(instructions):
+                self.executeInstruction(instructions[self.pc >> 2])
+
+                if printContent:
+                    print('Running instr: "{0}"'
+                          '\nRegFile: {1}'.format(str(instructions[self.pc >> 2]), str(self.regfile)))
+                self.pc += 4
 
             self.regfile.redisplay()
             self.mem.redisplay()
@@ -146,7 +159,7 @@ class Storage:
 
         if initializer is not None:
             init = initializer
-        
+
         size, names, reps = init
 
         self.size = size
@@ -165,7 +178,7 @@ class Storage:
         # the representation, but as a number, translate to string using Storage.reps
         self.__repIndexes__ = list(map(lambda idx: Storage.reps.index(idx), self.__reps__))
         self.__current__ = 0
-        
+
 
     def items(self, stringify=False):
         """
@@ -213,7 +226,7 @@ class Storage:
         self.sim.gui.stopScrollPane()
         self.redisplay()
 
-    
+
     def redisplay(self, index=-1):
         if self.sim.gui is None:
             # raise Exception("No gui object")
@@ -310,4 +323,42 @@ class Mem(Storage):
         for b in [byteElements]:  # if multiple elements
             self.__values__[address] = b
             address += 1
+
+def binary(num):
+    return ''.join(bin(ord(c)).replace('0b', '').rjust(8, '0') for c in struct.pack('!f', num))
+
+def binary(num):
+    # https://stackoverflow.com/questions/16444726/binary-representation-of-float-in-python-bits-not-hex
+    import struct
+    # Struct can provide us with the float packed into bytes. The '!' ensures that
+    # it's in network byte order (big-endian) and the 'f' says that it should be
+    # packed as a float. Alternatively, for double-precision, you could use 'd'.
+    packed = struct.pack('!f', num)
+    print('Packed: %s' % repr(packed))
+
+    # For each character in the returned string, we'll turn it into its corresponding
+    # integer code point
+    # 
+    # [62, 163, 215, 10] = [ord(c) for c in '>\xa3\xd7\n']
+    integers = [ord(c) for c in packed]
+    print('Integers: %s' % integers)
+
+    # For each integer, we'll convert it to its binary representation.
+    binaries = [bin(i) for i in integers]
+    print('Binaries: %s' % binaries)
+
+    # Now strip off the '0b' from each of these
+    stripped_binaries = [s.replace('0b', '') for s in binaries]
+    print('Stripped: %s' % stripped_binaries)
+
+    # Pad each byte's binary representation's with 0's to make sure it has all 8 bits:
+    #
+    # ['00111110', '10100011', '11010111', '00001010']
+    padded = [s.rjust(8, '0') for s in stripped_binaries]
+    print('Padded: %s' % padded)
+
+    # At this point, we have each of the bytes for the network byte ordered float
+    # in an array as binary strings. Now we just concatenate them to get the total
+    # representation of the float:
+    return ''.join(padded)
 

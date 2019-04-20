@@ -335,8 +335,50 @@ class Instruction(Addressable):
         return str(d)
 
 
+    def __asInt__(self) -> (int, int, int):
+        pass
+
+
     def execute(self, sim):
+        # Member: FARIS HIJAZI
         if self.opcode in Instruction.sections[2]:
+            if self.opcode == 2:  # J
+                sim.pc += self.offset
+            if self.opcode == 3:  # JAL
+                sim.regfile[31] = sim.pc
+                sim.pc += self.offset
+            if self.opcode == 8:  # BEQI
+                pass
+            if self.opcode == 9:  # BNEI
+                pass
+            if self.opcode == 10:  # BLTI
+                pass
+            if self.opcode == 11:  # BGEI
+                pass
+            if self.opcode == 12:  # BLTUI
+                pass
+            if self.opcode == 13:  # BGEUI
+                pass
+            if self.opcode == 14:  # JR
+                pass
+            if self.opcode == 15:  # JALR
+                pass
+            if self.opcode == 16:  # BEQ
+                pass
+            if self.opcode == 17:  # BNE
+                pass
+            if self.opcode == 18:  # BLT
+                pass
+            if self.opcode == 19:  # BGE
+                pass
+            if self.opcode == 20:  # BLTU
+                pass
+            if self.opcode == 21:  # BGEU
+                pass
+            if self.opcode == 22:  # LOOP
+                pass
+            if self.opcode == 23:  # LOOPD
+                pass
             pass  # do
         elif self.opcode in Instruction.sections[3]:
             if self.opcode in {24, 25}:

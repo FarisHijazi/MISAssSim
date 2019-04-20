@@ -1,10 +1,8 @@
 from typing import List, Dict
 from Addressable import *
 
-
 def reGroup(match):
     return match if not match else match.group()
-
 
 class AssembledFile:
     # data directive: size in bytes
@@ -54,9 +52,8 @@ class AssembledFile:
                     raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
 
                 line = '\n'.join(line.split(' ')[1:]).strip()  # removing the part with the label
-                self.symbolTable[label_match.group().strip()] = Addressable(size=0,
-                                                                            lineStr=i_counter << 3,
-                                                                            alignment=3)  # store the address of the label as an Addressable with size=0
+                self.symbolTable[label_match.group().strip()] = Addressable(
+                    size=0, lineStr=line, alignment=4)  # store the address of the label as an Addressable with size=0
 
             # update current segment
             elif line and directive_match and line in self.directiveSegments:
@@ -104,3 +101,4 @@ def extractDirective(lineStr: str):
     :return: (directive, directiveArgs) """
     match = re.search(r'\.[a-zA-z][a-zA-z\d_]+', lineStr)
     return match if not match else match.group()
+

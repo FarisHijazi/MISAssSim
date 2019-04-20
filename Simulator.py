@@ -1,5 +1,4 @@
 from Addressable import Instruction
-from AssembledFile import AssembledFile
 import struct
 import ctypes
 
@@ -27,8 +26,6 @@ representationParsers = {
     'dec': parseDecStr,
     'ascii': parseAsciiStr,
 }
-
-import re
 
 # assuming the input value is a signed decimal value (TODO: this should become bytes)
 addressBits = 64

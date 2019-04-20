@@ -1,5 +1,4 @@
 import os.path
-import sys
 from tkinter import *
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
@@ -7,11 +6,9 @@ from AssembledFile import AssembledFile
 from Simulator import Simulator
 from appjar import gui
 
-outfile = "hex"
 sim = None
 
-
-def compileASM(asm_text):
+def compileASM(asm_text, outfile):
     assembledFile = AssembledFile(asm_text)
     # print cpu_out
     fname, ext = os.path.splitext(outfile)
@@ -27,7 +24,6 @@ def compileASM(asm_text):
 
     print("AssembledFile:" + assembledFile.text)
     return assembledFile
-
 
 def long_to_bytes(val, endianness='big'):
     from binascii import unhexlify
@@ -64,8 +60,7 @@ def long_to_bytes(val, endianness='big'):
 
     return s
 
-
-def makeGUI(startText: str):
+def makeGUI(cmd_args):
     app = gui("M-Architecture Simulation ", "800x675")
     app.setSticky("news")
     app.setExpand("both")
@@ -73,26 +68,24 @@ def makeGUI(startText: str):
 
     sim.gui = app
 
+
     def openFile():
-        global outfile
         openfilename = askopenfilename()
         if openfilename is not None:
-            outfile = openfilename
-            asmfile = open(outfile, "r")
-            asmfile.seek(0)
-            asmdata = asmfile.read()
-            textArea.delete("1.0", "end - 1c")
-            textArea.insert("1.0", asmdata)
-            asmfile.close()
+            cmd_args.outfile = openfilename
+            with open(cmd_args.outfile, "r") as asmfile:
+                asmfile.seek(0)
+                asmdata = asmfile.read()
+                textArea.delete("1.0", "end - 1c")
+                textArea.insert("1.0", asmdata)
             filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
-            frame.title("muCPU Assembler [" + outfile + "]")
+            frame.title("muCPU Assembler [" + cmd_args.outfile + "]")
             frame.focus()
 
 
     def saveFile():
-        global outfile
         asmdata = textArea.get("1.0", "end - 1c")
-        asmfile = open(outfile, "w")
+        asmfile = open(cmd_args.outfile, "w")
         asmfile.seek(0)
         asmfile.truncate()
         asmfile.write(asmdata)
@@ -100,18 +93,17 @@ def makeGUI(startText: str):
 
 
     def saveFileAs():
-        global outfile
         saveasfilename = asksaveasfilename()
         if saveasfilename is not None:
-            outfile = saveasfilename
+            cmd_args.outfile = saveasfilename
             asmdata = textArea.get("1.0", "end - 1c")
-            asmfile = open(outfile, "w")
+            asmfile = open(cmd_args.outfile, "w")
             asmfile.seek(0)
             asmfile.truncate()
             asmfile.write(asmdata)
             asmfile.close()
             filemenu.entryconfig(filemenu.index("Save"), state=NORMAL)
-            frame.title("muCPU Assembler [" + outfile + "]")
+            frame.title("muCPU Assembler [" + cmd_args.outfile + "]")
             frame.focus()
 
 
@@ -121,7 +113,7 @@ def makeGUI(startText: str):
 
 
     def compileASM_GUI():
-        return compileASM(app.getTextArea("code"))
+        return compileASM(app.getTextArea("code"), cmd_args.outfile)
 
 
     def menuPress(name):
@@ -132,7 +124,7 @@ def makeGUI(startText: str):
             app.stop()
 
 
-    app.addScrolledTextArea("code", 0, 0,2,  text=startText)
+    app.addScrolledTextArea("code", 0, 0, 2, text=cmd_args.startText)
 
 
     def toolPress(name):
@@ -157,13 +149,10 @@ def makeGUI(startText: str):
 
     app.addScrolledTextArea("console", row=1, column=1, colspan=2)
 
-
-
     tools = ["Compile", "Execute", "Execute Next"]
     app.addToolbar(tools, toolPress)
     # app.showSplash("M-Architecture Simulator", fill='blue', stripe='black', fg='white', font=44)
     app.go()
-
 
 #  code
 
@@ -173,6 +162,8 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--file', nargs='?', type=str,
                     help='(optional) path to assembly file, either to be loaded in GUI or to compile in the CLI')
+parser.add_argument('-o', '--outfile', nargs='?', type=str, default='$infile$_output',
+                    help='(optional) output file name')
 parser.add_argument('-i', '--asm', type=str, default="",
                     help="Assembly instruction(s) to assemble (separate with ';' as new line)")
 parser.add_argument('-t', '--text', default=False, action="store_true", help='Text mode')  # text mode
@@ -184,23 +175,21 @@ cmd_args = parser.parse_args()
 _assembledFile: AssembledFile
 sim = Simulator()
 
-# if the user passed a valid filepath, then don't run GUI and just compile it in the command line
-intext = ""
+cmd_args.outfile = re.sub(r'\$infile\$', cmd_args.file, cmd_args.outfile)
+
+cmd_args.startText = ""
 
 if cmd_args.text:
     accumulatedInput = ""
-
 
     def runAll():
         _assembledFile = compileASM(accumulatedInput)
         sim.init(_assembledFile)
         sim.runAll()
 
-
     def compile():
         _assembledFile = compileASM(accumulatedInput)
         sim.init(_assembledFile)
-
 
     'name: (description:str, mnemonics:List[str], func)'
     commands = dict(
@@ -223,15 +212,15 @@ if cmd_args.text:
             for command in commands:
                 if ipt[1:] in commands.get(command).get('cmd'):
                     commands[command].get('func')()
-
         else:
             accumulatedInput += ipt + '\n'
             i += 1
 
+# if the user passed a valid filepath, then don't run GUI and just compile it in the command line
 if cmd_args.file and os.path.isfile(cmd_args.file):
     with open(cmd_args.file, 'r') as file:
-        intext = file.read()
-        _assembledFile = compileASM(intext)
+        cmd_args.startText = file.read()
+        _assembledFile = compileASM(cmd_args.startText)
     # cmd_args.file = file
 
     sim.init(_assembledFile)
@@ -247,14 +236,12 @@ if cmd_args.asm:
 if not cmd_args.run:
     if cmd_args and cmd_args.asm:
         print("Reading asm args")
-        intext = cmd_args.asm
+        cmd_args.startText = cmd_args.asm
 
-    # clear args so that appjar wouldn't get messed up
-    sys.argv = [sys.argv[0]]
+    sys.argv = [sys.argv[0]]  # clear args so that appjar wouldn't get messed up
 
     Tk().withdraw()
-    frame = makeGUI(intext)
-
+    frame = makeGUI(cmd_args)
 elif _assembledFile:
     sim.init(_assembledFile)
     sim.runAll()

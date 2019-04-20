@@ -1,5 +1,5 @@
-from typing import List, Dict
 from Addressable import *
+import re
 
 def reGroup(match):
     return match if not match else match.group()
@@ -51,9 +51,9 @@ class AssembledFile:
                 if line in self.symbolTable:
                     raise Exception('Duplicate symbol "' + line + '" at line: ' + str(i))
 
-                line = '\n'.join(line.split(' ')[1:]).strip()  # removing the part with the label
-                self.symbolTable[label_match.group().strip()] = Addressable(
-                    size=0, lineStr=line, alignment=4)  # store the address of the label as an Addressable with size=0
+                line = '\n'.join(line.split(' ')[1:]).strip()  # removing the label from the string (to prevent later issues)
+                # store the address of the label as an Addressable with size=0
+                self.symbolTable[label_match.group().strip()] = Addressable(size=0, lineStr=line, alignment=4)
 
             # update current segment
             elif line and directive_match and line in self.directiveSegments:

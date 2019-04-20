@@ -3,19 +3,12 @@ Conventions to agree on:
 - register arguments will be strings othwerise
 """
 
-from tkinter import *
 # from AssembledFile import AssembledFile
 import re
 
 # from tkFileDialog import *
-from tkinter import filedialog
-import os.path
-from argparse import ArgumentParser
-import sys
-from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 # TODO: fix issue: the dictionaries, sometimes imm='r0' or wtver, BIG PROBLEM! test mul for an example
-import AssembledFile
 
 outfile = "Untitled"
 fileexists = False

@@ -1,16 +1,22 @@
 from Addressable import Instruction
 from AssembledFile import AssembledFile
+import struct
+import ctypes
 
 printContent = False
 
 def parseFloatStr(string):
-    return 0 if not string else int(string, 2) # TODO:
+    return 0 if not string else float(string)  # TODO:
+
 def parseDecStr(string):
     return 0 if not string else int(string)
+
 def parseHexStr(string):
     return 0 if not string else int(string, 16)
+
 def parseBinStr(string):
     return 0 if not string else int(string, 2)
+
 def parseAsciiStr(string):
     return 0 if not string else ord(string)
 
@@ -58,11 +64,13 @@ class Simulator:
             self.mem.updateFromGUI()
         # reset memory and stuff
 
+
     def log(self, *args):
         if self.gui:
             self.gui.getTextArea('console', *args)
         else:
             print('CONSOLE:', *args)
+
 
     def executeInstruction(self, instruction: Instruction):
         instruction.execute(self)
@@ -115,7 +123,6 @@ class Simulator:
 
 
 class Storage:
-
     # format of the reg file: (value, name, representation)
     # representation will be one of: ('fp', 'int', 'hex', 'bin', 'dec')
     initializers = {
@@ -129,12 +136,12 @@ class Storage:
 
     reps = ['fp', 'hex', 'bin', 'dec', 'ascii']
 
-    # (width in bits)
 
-    def __init__(self, sim: Simulator, size:int=32, name:str=None, initializer=None):
+    # (width in bits)
+    def __init__(self, sim: Simulator, size: int = 32, name: str = None, initializer=None):
         # NOTE: name will be used as the title in appjar, must be unique
         self.name = name  # the name of THIS storage object (mem, gp, e, c, fp)
-        
+
         init = Storage.initializers.get(name, None)
 
         if initializer is not None:
@@ -145,7 +152,6 @@ class Storage:
         self.size = size
         self.__names__ = names
         self.__reps__ = reps * size
-
 
         self.sim = sim
 
@@ -170,23 +176,24 @@ class Storage:
             return zip(range(len(self.__names__)), self.__names__, self.__values__, self.__reps__)
         return zip(map(str, range(len(self.__names__))), self.__names__, map(str, self.__values__), self.__reps__)
 
+
     def buildGUI(self):
-        #NOTE: scrollPane must already be opened before calling this method
+        # NOTE: scrollPane must already be opened before calling this method
         # building memory gui
         greyToggle = False
         for i, name, value, rep in self.items():
-            
-            
-            self.sim.gui.addButton(name, column=1, colspan=1,
-                func = lambda btnName: self.cycleRep(self.__names__.index(btnName))
+
+            self.sim.gui.addButton(
+                name, column=1, colspan=1,
+                func=lambda btnName: self.cycleRep(self.__names__.index(btnName))
             )
-            self.sim.gui.entry(name+"_entry", value=value, row=i, column=2, colspan=10)
+            self.sim.gui.entry(name + "_entry", value=value, row=i, column=2, colspan=10)
             self.sim.gui.addLabel(name + "_rep", text=rep, row=i, column=3, colspan=1, selectable=False)
-            
+
             if greyToggle:
-                self.sim.gui.setEntryBg(name+"_entry", "grey")
+                self.sim.gui.setEntryBg(name + "_entry", "grey")
                 self.sim.gui.setButtonBg(name, "grey")
-                self.sim.gui.setLabelBg(name+"_rep", "grey")
+                self.sim.gui.setLabelBg(name + "_rep", "grey")
             greyToggle = not greyToggle
         self.sim.gui.stopScrollPane()
         self.redisplay()
@@ -200,7 +207,7 @@ class Storage:
 
         # iterating over the names and getting the values
         for i, name, value, rep in self.items():
-            guistr = self.sim.gui.getEntry(name+"_entry")
+            guistr = self.sim.gui.getEntry(name + "_entry")
             self[i] = representationParsers.get(rep)(guistr)
 
         self.sim.gui.stopScrollPane()
@@ -233,7 +240,7 @@ class Storage:
         # increment the repIndex
         self.__repIndexes__[index] = (self.__repIndexes__[index] + 1) % len(Storage.reps)
         # update rep str
-        self.__reps__[index] = Storage.reps[self.__repIndexes__[index]] # map repr number to repr str
+        self.__reps__[index] = Storage.reps[self.__repIndexes__[index]]  # map repr number to repr str
 
         self.redisplay(index)
         return self.__reps__[index]
@@ -254,6 +261,7 @@ class Storage:
             index = self.__names__.index(index)
         return self.__values__[index]
 
+
     def __setitem__(self, key, value):
         self.set(key, value)
 
@@ -264,23 +272,24 @@ class Storage:
 
     def __str__(self):
         return "{}:\n\t{}".format(self.name,
-                                                "\n\t".join(map(str, zip(self.__names__, self.__values__))))
+                                  "\n\t".join(map(str, zip(self.__names__, self.__values__))))
+
 
     def __length__(self):
         return len(self.__values__)
 
+
     def __iter__(self):
         return self
 
-    def next(self): # Python 3: def __next__(self)
-        if self.__current__ > len(self.__values__)-1:
+
+    def next(self):  # Python 3: def __next__(self)
+        if self.__current__ > len(self.__values__) - 1:
             self.__current__ = 0
             raise StopIteration
         else:
             self.__current__ += 1
             return self.__values__[self.__current__]
-
-
 
 class Regfile(Storage):
 
@@ -291,8 +300,6 @@ class Regfile(Storage):
 
         self.__values__[1] = 1  # DEBUG: FIXME: just for testing
 
-
-
 class Mem(Storage):
     def __init__(self, *args, **kwargs):
         """ :param name: decides the type of __values__ to make. either one of: "gp", "e", "c", "fp" """
@@ -300,7 +307,7 @@ class Mem(Storage):
 
 
     def set(self, address, byteElements):
-        for b in [byteElements]: # if multiple elements
+        for b in [byteElements]:  # if multiple elements
             self.__values__[address] = b
             address += 1
 

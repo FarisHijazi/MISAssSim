@@ -398,7 +398,6 @@ sec4_ALUI_dict = {
     "leu": (33, 4, 'i3'),
 }
 
-
 def asmtointsection2(d):
     # Compare with Zero Branches (Pseudo)
     if d.op in d.opcodes.get('bzero'):
@@ -438,7 +437,6 @@ def asmtointsection2(d):
         d.rai = reg(d.args[1])
     # return d.rai, d.rbi, d.imm
 
-
 # d.ra, d.rbi, rc, d.rd, s, d.func, d.imm =
 def asmtoint3(d):
     # sec3.6
@@ -477,7 +475,6 @@ def asmtoint3(d):
 
     # return ra, d.rbi, rc, d.rdi, s, d.func, d.imm
 
-
 # d.opcode, d.ra, d.rbi, d.func, d.imm
 def asmtointALUI(d):
     d.rb = d.args[1]
@@ -488,7 +485,6 @@ def asmtointALUI(d):
 
     d.opcode, d.func, d.imm = translatedDictArgs(d, sec4_ALUI_dict[d.op])
     # return opcode, ra, d.rbi, func, imm
-
 
 # d.opcode, d.ra, d.rbi, d.func, d.imm
 def asmtointRET(d):
@@ -501,7 +497,6 @@ def asmtointRET(d):
     d.rbi = reg(d.rb)
 
     d.func, d.imm = translatedDictArgs(d, sec4_RET_dict[d.op])
-
 
 def translatedDictArgs(instr, tup: tuple):
     """
@@ -531,7 +526,6 @@ def translatedDictArgs(instr, tup: tuple):
 
     return tuple(l)
 
-
 # d.opcode, d.ra, d.rbi, d.func, d.imm_L, d.imm_R, d.imm
 def asmtointSHIFT(d):
     d.opcode = 37
@@ -542,7 +536,6 @@ def asmtointSHIFT(d):
     d.rai = reg(d.ra)
 
     d.func, d.imm_L, d.imm_R, d.imm = translatedDictArgs(d, sec4_SHIFT_dict[d.op])
-
 
 # d.opcode, d.ra, d.rbi, d.func, x, d.rd
 def asmtointALU(d):
@@ -560,7 +553,6 @@ def asmtointALU(d):
     d.rdi = reg(d.rd)
     d.rai = reg(d.ra)
     d.rbi = reg(d.rb)
-
 
 # def asmtointALU(d):
 #     """
@@ -629,7 +621,6 @@ def asmtointFPU1(d):
     d.rai = reg(d.args[2])
     d.p, d.func = fpu1_dict[d.op]
 
-
 # d.opcode, d.ra, d.rbi, d.rd, d.func, d.p
 def asmtointFPU2(d):
     d.opcode = 43
@@ -645,7 +636,6 @@ def asmtointFPU2(d):
     d.rdi = reg(d.rd)
     d.rai = reg(d.ra)
     d.rbi = reg(d.rb)
-
 
 # d.opcode, d.ra, d.rbi, rc, d.rd, d.func, d.p
 def asmtointFPU3(d):
@@ -669,7 +659,6 @@ def asmtointFPU3(d):
 
     # return opcode, ra, rb, rc, rd, func, p
 
-
 # opcode, ra, rb, rc, rd, func, x
 def asmtoint5(d):
     d.opcode = 41
@@ -688,9 +677,9 @@ def asmtoint5(d):
     d.rbi = reg(d.rb)
     d.rci = reg(d.rc)
 
-
 def inttohex(d):
     d.calcLabelOffset()
+
 
     def twos_comp(val, bits):
         """compute the 2's complement of int value val"""
@@ -811,11 +800,9 @@ def inttohex(d):
                          instruction)  # replacing empty spaces, empty spaces appear when the bits are reserved
     return format(int(instruction, 2), '04x')
 
-
 def asmtointNOP(d):
     # FIXME: this is a fake function
     return d.opcode, d.imm
-
 
 def asmtoint(asm):
     from Addressable import Instruction
@@ -824,26 +811,7 @@ def asmtoint(asm):
         return decodeInstruction(Instruction(asm))
     return decodeInstruction(asm)  # asm is actually an Instruction
 
-
 def decodeInstruction(d):
-    def getLabelOffset(d):
-        for base in [10, 8, 16, 2]:
-            try:
-                return int(d.offset, base=base)
-            except:
-                pass
-
-        if not d.symbolTable:
-            raise Exception(
-                "ERROR: decoding control flow isntructions requires a symbol table to be passed to decodeInstruction()")
-
-        if d.label in d.symbolTable:
-            offset = (d.symbolTable.get(d.label, 0).address - d.address) >> 5
-            print('calculated "{}" label offset: {}'.format(d.label, offset))
-            return offset
-        else:
-            return None
-
 
     # Section 6 FPU1
     if d.op in fpu1_dict:
@@ -880,7 +848,6 @@ def decodeInstruction(d):
 
         d.opcode = opcodes.get('b').get(d.op)
         d.label = d.args[3]
-        d.offset = getLabelOffset(d)
         d.ra, d.rbi, d.imm = asmtointsection2(d)
     elif d.op in opcodes.get('bzero'):
         if len(d.args) != 3:
@@ -888,17 +855,14 @@ def decodeInstruction(d):
 
         d.opcode = opcodes.get('b').get(d.op)
         d.label = d.args[2]
-        d.offset = getLabelOffset(d)
         d.ra, d.rbi, d.imm = asmtointsection2(d)
     # SECTION 2 j type (does not call asmtointsection2)
     elif d.op in opcodes.get('j'):
         if d.op == "jal" or d.op == "j":
             d.label = d.args[1]
-            d.offset = getLabelOffset(d)
         elif d.op == "jr":
             if len(d.args) == 3:
                 d.label = d.args[2]
-                d.offset = getLabelOffset(d)
             elif len(d.args) == 2:
                 d.offset = 0
             else:
@@ -908,7 +872,6 @@ def decodeInstruction(d):
         elif d.op == "jalr":
             if len(d.args) == 4:
                 label = d.args[3]
-                d.offset = getLabelOffset(d)
             elif len(d.args) == 3:
                 d.offset = 0
             else:
@@ -985,7 +948,6 @@ def decodeInstruction(d):
             asmtoint5(d)
     return d
 
-
 def decodeToHex(asm):
     """
     string line to hex string
@@ -993,7 +955,6 @@ def decodeToHex(asm):
     d = asmtoint(asm)
     print(str(asm) + " -> " + str(d))
     return inttohex(d)
-
 
 def reg(mnemonic: str):
     """
@@ -1041,7 +1002,7 @@ def reg(mnemonic: str):
         '$ra': 0b11111,
     }
 
-    if len(mnemonic) == 2:
+    if mnemonic[0].lower() == 'r':
         return int(mnemonic[1:])
     else:
         if mnemonic in registerAliasDict:

@@ -71,29 +71,27 @@ class AssembledFile:
                     dataBlock = DataBlock(lineStr=line, alignment=next_align)
                     self.directiveSegments.get(currentSegment).append(dataBlock)
 
-            elif line and currentSegment == ".text" and not directive_match:  # .text cannot be in the same line as an instruction
+            # .text cannot be in the same line as an instruction
+            elif line and currentSegment == ".text" and not directive_match:
                 # instruction
                 instr = Instruction(line, symbolTable=self.symbolTable)
 
                 self.directiveSegments[currentSegment] += [instr]
                 i_counter += 1
 
-            print('{}:\t"{}"'
-                  '\n\tsegment: {}'
-                  '\n\tdirective: {}'
-                  '\n\tlabel: {}\n'.format(i, line, currentSegment, reGroup(segmentDirective_match),
-                                           reGroup(directive_match),
-                                           reGroup(label_match)))
-
-            # TODO: increment current line and current address
+            # print('{}:\t"{}"'
+            #       '\n\tsegment: {}'
+            #       '\n\tdirective: {}'
+            #       '\n\tlabel: {}\n'.format(i, line, currentSegment, reGroup(segmentDirective_match),
+            #                                reGroup(directive_match),
+            #                                reGroup(label_match)))
 
         i = 0
         for instr in self.directiveSegments.get('.text'):
             instr.calcLabelOffset()
-            print('{0} => {1} => x"{2}",\n'.format(str(i), str(instr), instr.hex()))
+            print('{0} => {1} => x"{2}",\n'.format(i, instr, instr.hex()))
             self.hex.append(instr.hex())
             i += 1
-
         print("Successfully assembled file:", self)
 
 

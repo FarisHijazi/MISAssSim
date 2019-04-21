@@ -504,108 +504,116 @@ class Instruction(Addressable):
                 elif self.func == 3:  # SD
                     pass  # do
 
-                # for self.opcode 32 - 35
+        elif self.opcode in Instruction.sections[4]:
+
+
+            # some needed conversions:
+                sign_extended_64_imm = sign_extend(self.imm, 64)
+                unsigned_rai = unsign(sim.regfile[self.rai])
+                unsigned_imm = unsign(self.imm)
+                unsigned_extended_64_imm = unsign(sign_extended_64_imm)
+                
+                # for opcode 32 - 35
                 # Rb is the destination here, also: [sign extend imm to 64 bits], NOP is not implemented
-                if self.opcode in {32, 33, 34, 45}:
+            if self.opcode in {32, 33, 34, 35}:
+                if self.func == 0:  # ADD
+                    #  rbi = rai + imm
+                    sim.regfile[self.rbi] = sim.regfile[self.rai] + sign_extended_64_imm
+                elif self.func == 1:  # NADD
+                    #  rbi = -rai + imm
+                    sim.regfile[self.rbi] = -sim.regfile[self.rai] + sign_extended_64_imm
+                elif self.func == 2:  # AND
+                    #  rbi = rai & imm
+                    sim.regfile[self.rbi] = sim.regfile[self.rai] & sign_extended_64_imm
+                elif self.func == 3:  # CAND
+                    #  rbi = ~rai & imm
+                    sim.regfile[self.rbi] = ~sim.regfile[self.rai] & sign_extended_64_imm
+                elif self.func == 4:  # OR
+                    #    rbi = rai | imm
+                    sim.regfile[self.rbi] = sim.regfile[self.rai] | sign_extended_64_imm
+                elif self.func == 5:  # COR
+                    #    rbi = ~rai | imm
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = ~sim.regfile[self.rai] | sign_extended_64_imm
+                elif self.func == 6:  # XOR
+                    #   rbi = rai ^ imm
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = sim.regfile[self.rai] ^ sign_extended_64_imm
+                elif self.func == 7:  # SET
+                    #   rbi = imm
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = sign_extended_64_imm
+                elif self.func == 8:  # EQ
+                    #    rbi = (rai == imm)
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = (sim.regfile[self.rai] == sign_extended_64_imm)
+                elif self.func == 9:  # NE
+                    #  rbi = (rai != imm)
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = (sim.regfile[self.rai] != sign_extended_64_imm)
+                elif self.func == 10:  # LT
+                    # rbi = (rai < imm)
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = (sim.regfile[self.rai] < sign_extended_64_imm)
+                elif self.func == 11:  # GE
+                    #  rbi = (rai > imm)
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = (sim.regfile[self.rai] > sign_extended_64_imm)
+                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
+                    #  rbi = (rai < imm)
+                    # [use 2 NOP]
+                    sim.regfile[self.rbi] = unsigned_rai < unsigned_extended_64_imm
+                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
+                    #  rbi = (rai > imm)
+                    sim.regfile[self.rbi] = unsigned_rai > unsigned_extended_64_imm
+                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    #  rbi = min(rai, imm)
+                    sim.regfile[self.rbi] = min(sim.regfile[self.rai], sign_extended_64_imm)
+                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    #   rbi = max(rai, imm)
+                    sim.regfile[self.rbi] = max(sim.regfile[self.rai], sign_extended_64_imm)
 
-                    if self.func == 0:  # ADD
-                        #  rbi = rai + imm
-                        sim.regfile[self.rbi] = sim.regfile[self.rai] + sign_extended_64_imm
-                    elif self.func == 1:  # NADD
-                        #  rbi = -rai + imm
-                        sim.regfile[self.rbi] = -sim.regfile[self.rai] + sign_extended_64_imm
-                    elif self.func == 2:  # AND
-                        #  rbi = rai & imm
-                        sim.regfile[self.rbi] = sim.regfile[self.rai] & sign_extended_64_imm
-                    elif self.func == 3:  # CAND
-                        #  rbi = ~rai & imm
-                        sim.regfile[self.rbi] = ~sim.regfile[self.rai] & sign_extended_64_imm
-                    elif self.func == 4:  # OR
-                        #    rbi = rai | imm
-                        sim.regfile[self.rbi] = sim.regfile[self.rai] | sign_extended_64_imm
-                    elif self.func == 5:  # COR
-                        #    rbi = ~rai | imm
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = ~sim.regfile[self.rai] | sign_extended_64_imm
-                    elif self.func == 6:  # XOR
-                        #   rbi = rai ^ imm
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = sim.regfile[self.rai] ^ sign_extended_64_imm
-                    elif self.func == 7:  # SET
-                        #   rbi = imm
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = sign_extended_64_imm
-                    elif self.func == 8:  # EQ
-                        #    rbi = (rai == imm)
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = (sim.regfile[self.rai] == sign_extended_64_imm)
-                    elif self.func == 9:  # NE
-                        #  rbi = (rai != imm)
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = (sim.regfile[self.rai] != sign_extended_64_imm)
-                    elif self.func == 10:  # LT
-                        # rbi = (rai < imm)
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = (sim.regfile[self.rai] < sign_extended_64_imm)
-                    elif self.func == 11:  # GE
-                        #  rbi = (rai > imm)
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = (sim.regfile[self.rai] > sign_extended_64_imm)
-                    elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
-                        #  rbi = (rai < imm)
-                        # [use 2 NOP]
-                        sim.regfile[self.rbi] = unsigned_rai < unsigned_extended_64_imm
-                    elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
-                        #  rbi = (rai > imm)
-                        sim.regfile[self.rbi] = unsigned_rai > unsigned_extended_64_imm
-                    elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                        #  rbi = min(rai, imm)
-                        sim.regfile[self.rbi] = min(sim.regfile[self.rai], sign_extended_64_imm)
-                    elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                        #   rbi = max(rai, imm)
-                        sim.regfile[self.rbi] = max(sim.regfile[self.rai], sign_extended_64_imm)
+            # in this next opcode (36): RETURN/Jumping is not done yet
+            elif self.opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12
+                sim.regfile[31] = sim.pc
+                if self.offset is not None:
+                    print("Jumping with offset={}".format(self.offset))
+                    sim.pc += self.offset
+                else:
+                    print("WARNING: return instruction doesn't have offset: {}".format(self))
 
-                        # in this next self.opcode(36): RETURN/Jumping is not done yet
-                elif self.opcode == 36:  # same as above but with return Example: RETOP Rb = Ra, Imm12 // JR R31; OP Rb = Ra, Imm12
-                    sim.regfile[31] = sim.pc
-                    if self.offset is not None:
-                        print("Jumping with offset={}".format(self.offset))
-                        sim.pc += self.offset
-                    else:
-                        print("WARNING: return instruction doesn't have offset: {}".format(self))
-
-                    if self.func == 0:  # ADD
-                        #  rbi = rai + imm
-                        sim.regfile[self.rbi] = sim.regfile[self.rai] + sign_extended_64_imm
-                    elif self.func == 1:  # NADD
-                        #  rbi = -rai + imm
-                        sim.regfile[self.rbi] = -sim.regfile[self.rai] + sign_extended_64_imm
-                    elif self.func == 2:  # AND
-                        #  rbi = rai & imm
-                        sim.regfile[self.rbi] = sim.regfile[self.rai] & sign_extended_64_imm
-                    elif self.func == 3:  # CAND
-                        #  rbi = ~rai & imm
-                        sim.regfile[self.rbi] = ~sim.regfile[self.rai] & sign_extended_64_imm
-                    elif self.func == 4:  # OR
-                        #    rbi = rai | imm
-                        sim.regfile[self.rbi] = sim.regfile[self.rai] | sign_extended_64_imm
-                    elif self.func == 5:  # COR
-                        #    rbi = ~rai | imm
-                        # [use 1 NOP]
-                        sim.regfile[self.rbi] = ~sim.regfile[self.rai] > sign_extended_64_imm
-                    elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
-                        #  rbi = (rai < imm)
-                        # [use 2 NOP]
-                        sim.regfile[self.rbi] = unsigned_rai < unsigned_extended_64_imm
-                    elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
-                        #  rbi = (rai > imm)
-                        sim.regfile[self.rbi] = unsigned_rai > unsigned_extended_64_imm
-                    elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
-                        #  rbi = min(rai, imm)
-                        sim.regfile[self.rbi] = min(sim.regfile[self.rai], sign_extended_64_imm)
-                    elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
-                        #   rbi = max(rai, imm)
-                        sim.regfile[self.rbi] = max(sim.regfile[self.rai], sign_extended_64_imm)
+                if self.func == 0:  # ADD
+                    #  rbi = rai + imm
+                    sim.regfile[self.rbi] = sim.regfile[self.rai] + sign_extended_64_imm
+                elif self.func == 1:  # NADD
+                    #  rbi = -rai + imm
+                    sim.regfile[self.rbi] = -sim.regfile[self.rai] + sign_extended_64_imm
+                elif self.func == 2:  # AND
+                    #  rbi = rai & imm
+                    sim.regfile[self.rbi] = sim.regfile[self.rai] & sign_extended_64_imm
+                elif self.func == 3:  # CAND
+                    #  rbi = ~rai & imm
+                    sim.regfile[self.rbi] = ~sim.regfile[self.rai] & sign_extended_64_imm
+                elif self.func == 4:  # OR
+                    #    rbi = rai | imm
+                    sim.regfile[self.rbi] = sim.regfile[self.rai] | sign_extended_64_imm
+                elif self.func == 5:  # COR
+                    #    rbi = ~rai | imm
+                    # [use 1 NOP]
+                    sim.regfile[self.rbi] = ~sim.regfile[self.rai] > sign_extended_64_imm
+                elif self.func == 12:  # LTU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
+                    #  rbi = (rai < imm)
+                    # [use 2 NOP]
+                    sim.regfile[self.rbi] = unsigned_rai < unsigned_extended_64_imm
+                elif self.func == 13:  # GEU   [sign extend imm to 64 bits & use 2 NOP]  [unsigned comparison]
+                    #  rbi = (rai > imm)
+                    sim.regfile[self.rbi] = unsigned_rai > unsigned_extended_64_imm
+                elif self.func == 14:  # MIN   [sign extend imm to 64 bits & use 2 NOP]
+                    #  rbi = min(rai, imm)
+                    sim.regfile[self.rbi] = min(sim.regfile[self.rai], sign_extended_64_imm)
+                elif self.func == 15:  # MAX   [sign extend imm to 64 bits & use 2 NOP]
+                    #   rbi = max(rai, imm)
+                    sim.regfile[self.rbi] = max(sim.regfile[self.rai], sign_extended_64_imm)
 
 
             # for self.Opcode 37 SHIFT
@@ -693,46 +701,160 @@ class Instruction(Addressable):
                     sim.regfile[self.rdi] = sim.regfile[self.rai] * sim.regfile[self.rbi] + sim.regfile[self.rci]
                 elif self.func == 5:
                     sim.regfile[self.rdi] = -sim.regfile[self.rai] * sim.regfile[self.rbi] + sim.regfile[self.rci]
+       
         elif self.opcode in Instruction.sections[6]:
-            # for self.opcode 42 FPU1
-            if self.opcode == 42:
-                if self.p == 0:  # SINGLE PERCISION
-                    if self.func == 0:  # ABS
-                        sim.regfile[self.rdi] = abs(sim.regfile[self.rai])
-                    elif self.func == 1:  # NEG
-                        sim.regfile[self.rdi] = ~(sim.regfile[self.rai])
-                    elif self.func == 2:  # SQRT
-                        sim.regfile[self.rdi] = math.sqrt(sim.regfile[self.rai])
-                    elif self.func == 4:  # CVTSD
-                        pass  # do   # convert to single percision
-                    elif self.func == 5:  # CVTSI
+
+            # for opcode 42 FPU1
+            if opcode == 42:  
+                if self.p == 0:                          # SINGLE PERCISION
+                    if self.func == 0:   # ABS
+                        sim.regfile.set( self.rdi, abs(sim.regfile.get(self.rai)) )
+                    elif self.func == 1: # NEG
+                        sim.regfile.set( self.rdi, ~(sim.regfile.get(self.rai)) )
+                    elif self.func == 2: # SQRT
+                        sim.regfile.set( self.rdi, sqrt(sim.regfile.get(self.rai)) )
+                    elif self.func == 4: # CVTSD
+                        pass # do   # convert to single percision 
+                    elif self.func == 5: # CVTSI
+                        pass  # do    
+                    elif self.func == 6: # CVTIS
                         pass  # do
-                    elif self.func == 6:  # CVTIS
+                    elif self.func == 7: # RINT  
+                        pass  # do    # isInfinity ?
+                elif self.p == 1:                        # DOUBLE PERCISION
+                    if self.func == 0:   # ABS
+                        sim.regfile.set( self.rdi, abs(sim.regfile.get(self.rai)) )
+                    elif self.func == 1: # NEG
+                        sim.regfile.set( self.rdi, ~(sim.regfile.get(self.rai)) )
+                    elif self.func == 2: # SQRT
+                        sim.regfile.set( self.rdi, sqrt(sim.regfile.get(self.rai)) )
+                    elif self.func == 4: # CVTSD
+                        pass # do   # convert to single percision 
+                    elif self.func == 5: # CVTSI
+                        pass  # do    
+                    elif self.func == 6: # CVTIS
                         pass  # do
-                    elif self.func == 7:  # RINT
-                        pass
-                elif self.p == 1:  # DOUBLE PERCISION
-                    if self.func == 0:  # ABS
-                        sim.regfile[self.rdi] = abs(sim.regfile[self.rai])
-                    elif self.func == 1:  # NEG
-                        sim.regfile[self.rdi] = ~(sim.regfile[self.rai])
-                    elif self.func == 2:  # SQRT
-                        sim.regfile[self.rdi] = math.sqrt(sim.regfile[self.rai])
-                    elif self.func == 4:  # CVTSD
-                        pass  # do   # convert to single percision
-                    elif self.func == 5:  # CVTSI
-                        pass  # do
-                    elif self.func == 6:  # CVTIS
-                        pass  # do
-                    elif self.func == 7:  # RINT
+                    elif self.func == 7: # RINT
                         pass  # do
 
-            # for self.opcode 43 FPU2
-            elif self.opcode == 43:
-                if self.p == 0:  # SINGLE PERCISION
-                    if self.func == 0:  # EQ
-                        sim.regfile[self.rdi] = sim.regfile[self.rai] == sim.regfile[self.rbi]
-                    elif self.func == 1:  # NE
-                        sim.regfile[self.rdi] = sim.regfile[self.rai] != sim.regfile[self.rbi]
-                    elif self.func == 2:  # LT
-                        sim.regfile[self.rdi] = sim.regfile[self.rai] and sim.regfile[self.rai], sim.regfile[self.rbi], sim.regfile[self.rci]
+
+            # for opcode 43 FPU2                            
+            elif opcode == 43:  
+                if self.p == 0:                     # SINGLE PERCISION
+                    if self.func == 0:   # EQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) == sim.regfile.get(self.rbi) ) )
+                    elif self.func == 1: # NE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) != sim.regfile.get(self.rbi) ) )
+                    elif self.func == 2: # LT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) < sim.regfile.get(self.rbi) ) )
+                    elif self.func == 3: # GE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) > sim.regfile.get(self.rbi) ) )
+                    elif self.func == 4: # INF
+                        pass  # do    
+                    elif self.func == 5: # NAN
+                        pass  # do
+                    elif self.func == 8: # ADD
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 9: # NADD
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 10: # MUL
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) ) )
+                    elif self.func == 11: # DIV
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) / sim.regfile.get(self.rbi) ) )
+                    elif self.func == 12: # MIN  
+                        sim.regfile.set( self.rdi, min( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
+                    elif self.func == 13: # MAX  
+                        sim.regfile.set( self.rdi, max( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
+                elif self.p == 1:                  # DOUBLE PERCISION
+                    if self.func == 0:   # EQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) == sim.regfile.get(self.rbi) ) )
+                    elif self.func == 1: # NE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) != sim.regfile.get(self.rbi) ) )
+                    elif self.func == 2: # LT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) < sim.regfile.get(self.rbi) ) )
+                    elif self.func == 3: # GE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) > sim.regfile.get(self.rbi) ) )
+                    elif self.func == 4: # INF
+                        pass  # do    
+                    elif self.func == 5: # NAN
+                        pass  # do
+                    elif self.func == 8: # ADD
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 9: # NADD
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 10: # MUL
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) ) )
+                    elif self.func == 11: # DIV
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) / sim.regfile.get(self.rbi) ) )
+                    elif self.func == 12: # MIN  
+                        sim.regfile.set( self.rdi, min( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
+                    elif self.func == 13: # MAX  
+                        sim.regfile.set( self.rdi, max( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
+
+
+
+
+            # for opcode 44 FPU3                            
+            elif opcode == 44:  
+                if self.p == 0:                      # SINGLE PERCISION
+                    if self.func == 0:   # ANDEQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) == sim.regfile.get(self.rci)) ) )
+                    elif self.func == 1: # ANDNE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) != sim.regfile.get(self.rci)) ) )
+                    elif self.func == 2: # ANDLT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) < sim.regfile.get(self.rci)) ) )
+                    elif self.func == 3: # ANDGE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) >= sim.regfile.get(self.rci)) ) )
+                    elif self.func == 4: # OREQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) == sim.regfile.get(self.rci)) ) )
+                    elif self.func == 5: # ORNE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) != sim.regfile.get(self.rci)) ) )
+                    elif self.func == 6: # ORLT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) < sim.regfile.get(self.rci)) ) )
+                    elif self.func == 7: # ORGE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) >= sim.regfile.get(self.rci)) ) )
+                    elif self.func == 8: # ADD
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 9: # NADD
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 10: # MADD  
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 11: # NMADD  
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 12: # MIN
+                        sim.regfile.set( self.rdi, ( min(sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) , sim.regfile.get(self.rci)) )
+                    elif self.func == 13: # MAX  
+                        sim.regfile.set( self.rdi, ( max(sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) , sim.regfile.get(self.rci)) )
+                elif self.p == 1:                     # DOUBLE PERCISION
+                    if self.func == 0:   # ANDEQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) == sim.regfile.get(self.rci)) ) )
+                    elif self.func == 1: # ANDNE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) != sim.regfile.get(self.rci)) ) )
+                    elif self.func == 2: # ANDLT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) < sim.regfile.get(self.rci)) ) )
+                    elif self.func == 3: # ANDGE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) and (sim.regfile.get(self.rbi) >= sim.regfile.get(self.rci)) ) )
+                    elif self.func == 4: # OREQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) == sim.regfile.get(self.rci)) ) )
+                    elif self.func == 5: # ORNE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) != sim.regfile.get(self.rci)) ) )
+                    elif self.func == 6: # ORLT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) < sim.regfile.get(self.rci)) ) )
+                    elif self.func == 7: # ORGE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) or (sim.regfile.get(self.rbi) >= sim.regfile.get(self.rci)) ) )
+                    elif self.func == 8: # ADD
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 9: # NADD
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 10: # MADD  
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 11: # NMADD  
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) + sim.regfile.get(self.rci) )
+                    elif self.func == 12: # MIN
+                        sim.regfile.set( self.rdi, ( min(sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) , sim.regfile.get(self.rci)) )
+                    elif self.func == 13: # MAX  
+                        sim.regfile.set( self.rdi, ( max(sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) , sim.regfile.get(self.rci)) )
+
+
+    def __asInt__(self) -> (int, int, int):
+        pass

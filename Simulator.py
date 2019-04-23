@@ -86,22 +86,22 @@ class Simulator:
 
 class Storage:
     # format of the reg file: (value, name, representation)
-    # representation will be one of: ('fp', 'int', 'hex', 'bin', 'dec')
+    # representation will be one of: ('dp', 'int', 'hex', 'bin', 'dec')
     initializers = {
         "gp": (32, ['r{}'.format(i) for i in range(32)], ['dec']),
         "e": (64, ['e{}'.format(i) for i in range(64)], ['dec']),
         "c": (64, ['c{}'.format(i) for i in range(64)], ['dec']),
-        "fp": (64, ['f{}'.format(i) for i in range(64)], ['fp']),
+        "fp": (64, ['f{}'.format(i) for i in range(64)], ['dp']),
         "Mem": (64, ['Mem{}'.format(i) for i in range(64)], ['hex']),
     }
 
-    reps = ['fp', 'hex', 'bin', 'dec', 'ascii']
+    reps = ['dec', 'hex', 'bin', 'ascii', 'sp', 'dp']
 
 
     # (width in bits)
     def __init__(self, sim: Simulator, size: int = 32, name: str = None, initializer=None):
         # NOTE: name will be used as the title in appjar, must be unique
-        self.name = name  # the name of THIS storage object (mem, gp, e, c, fp)
+        self.name = name  # the name of THIS storage object (mem, gp, e, c, dp)
 
         init = Storage.initializers.get(name, None)
 
@@ -140,6 +140,7 @@ class Storage:
 
     def buildGUI(self):
         # NOTE: scrollPane must already be opened before calling this method
+        #       The scrollPane will be closed at the end of this function call
         # building memory gui
         greyToggle = False
         for i, name, value, rep in self.items():
@@ -148,8 +149,8 @@ class Storage:
                 name, column=1, colspan=1,
                 func=lambda btnName: self.cycleRep(self.__names__.index(btnName))
             )
-            self.sim.gui.entry(name + "_entry", value=value, row=i, column=2, colspan=10)
-            self.sim.gui.addLabel(name + "_rep", text=rep, row=i, column=3, colspan=1, selectable=False)
+            self.sim.gui.entry(name + "_entry", value=value, row=i, column=3, colspan=10)
+            self.sim.gui.addLabel(name + "_rep", text=rep, row=i, column=4, colspan=1, selectable=False)
 
             if greyToggle:
                 self.sim.gui.setEntryBg(name + "_entry", "grey")
@@ -168,7 +169,7 @@ class Storage:
 
         # iterating over the names and getting the values
         for i, name, value, rep in self.items():
-            guistr = self.sim.gui.getEntry(name + "_entry")
+            guistr = self.sim.gui.getEntry(name + "_entry").strip()
             self[i] = representationParsers.get(rep)(guistr)
 
         self.sim.gui.stopScrollPane()
@@ -187,9 +188,24 @@ class Storage:
             for i, name, value, rep in self.items():
                 if index == -1 or i == index:
                     # print("Parsing gui value {} as '{}'".format(value, rep))
-                    formatted = representationFormatter.get(rep)(value)
-                    self.sim.gui.setEntry(name + "_entry", formatted)
-                    self.sim.gui.setLabel(name + "_rep", rep)
+                    formatted = representationFormatter.get(rep, lambda: None)(value)
+
+                    try:
+                        if formatted is None:
+                            raise Exception("Could not format value")
+                        self.sim.gui.setEntry(name + "_entry", formatted)
+                        self.sim.gui.setLabel(name + "_rep", rep)
+                    except Exception as e: # if formatted is None (can't be represented): use the next representation
+                        print(
+                            "Oops, couldn't represent {} ({}) as '{}', trying another representation."
+                            "\nException: {}".format(name, value, rep, e)
+                        )
+                        # increment the repIndex
+                        self.__repIndexes__[index] = (self.__repIndexes__[index] + 1) % len(Storage.reps)
+                        # update rep str
+                        self.__reps__[index] = Storage.reps[self.__repIndexes__[index]]  # map repr number to repr str
+                        self.sim.gui.setLabel(name + "_rep", self.__reps__[index])
+                        self.redisplay(index=index) # now that we incremented the representation, redisplay again (recursive until a valid representation is found)
             self.sim.gui.stopScrollPane()
 
 
@@ -219,7 +235,9 @@ class Storage:
             index = self.__names__.index(index)
 
         # TODO: do something here to check the instruction and to auto-set the rep depending on the instruction
-        print("set {}: {} -> {}".format(self.__names__[index], self.__values__[index], newVal))
+
+        if self.__values__[index] != newVal:
+            print("set {}: {} -> {}".format(self.__names__[index], self.__values__[index], newVal))
         self.__values__[index] = newVal
         self.redisplay(index)
 
@@ -270,7 +288,7 @@ class Storage:
 class Regfile(Storage):
 
     def __init__(self, *args, **kwargs):
-        """ :param name: decides the type of __values__ to make. either one of: "gp", "e", "c", "fp" """
+        """ :param name: decides the type of __values__ to make. either one of: "gp", "e", "c", "dp" """
         # if someString in initializers:
         super(Storage, self).__init__(*args, **kwargs)
 
@@ -278,7 +296,7 @@ class Regfile(Storage):
 
 class Mem(Storage):
     def __init__(self, *args, **kwargs):
-        """ :param name: decides the type of __values__ to make. either one of: "gp", "e", "c", "fp" """
+        """ :param name: decides the type of __values__ to make. either one of: "gp", "e", "c", "dp" """
         super().__init__(*args, **kwargs)
 
 

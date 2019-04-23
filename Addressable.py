@@ -687,38 +687,93 @@ class Instruction(Addressable):
                     sim.regfile[self.rdi] = -sim.regfile[self.rai] * sim.regfile[self.rbi] + sim.regfile[self.rci]
 
         elif self.opcode in Instruction.sections[6]:
-            # for self.opcode 42 FPU1
-            if self.opcode == 42:
-                if self.p == 0:  # SINGLE PERCISION
-                    if self.func == 0:  # ABS
-                        sim.regfile[self.rdi] = abs(sim.regfile[self.rai])
-                    elif self.func == 1:  # NEG
-                        sim.regfile[self.rdi] = ~(sim.regfile[self.rai])
-                    elif self.func == 2:  # SQRT
-                        sim.regfile[self.rdi] = math.sqrt(sim.regfile[self.rai])
-                    elif self.func == 4:  # CVTSD
-                        pass  # do   # convert to single percision
-                    elif self.func == 5:  # CVTSI
+
+            # for opcode 42 FPU1
+            if opcode == 42:  
+                if self.p == 0:                          # SINGLE PERCISION
+                    if self.func == 0:   # ABS
+                        sim.regfile.set( self.rdi, abs(sim.regfile.get(self.rai)) )
+                    elif self.func == 1: # NEG
+                        sim.regfile.set( self.rdi, ~(sim.regfile.get(self.rai)) )
+                    elif self.func == 2: # SQRT
+                        sim.regfile.set( self.rdi, sqrt(sim.regfile.get(self.rai)) )
+                    elif self.func == 4: # CVTSD
+                        pass # do   # convert to single percision 
+                    elif self.func == 5: # CVTSI
+                        pass  # do    
+                    elif self.func == 6: # CVTIS
                         pass  # do
-                    elif self.func == 6:  # CVTIS
+                    elif self.func == 7: # RINT  
+                        pass  # do    # isInfinity ?
+                elif self.p == 1:                        # DOUBLE PERCISION
+                    if self.func == 0:   # ABS
+                        sim.regfile.set( self.rdi, abs(sim.regfile.get(self.rai)) )
+                    elif self.func == 1: # NEG
+                        sim.regfile.set( self.rdi, ~(sim.regfile.get(self.rai)) )
+                    elif self.func == 2: # SQRT
+                        sim.regfile.set( self.rdi, sqrt(sim.regfile.get(self.rai)) )
+                    elif self.func == 4: # CVTSD
+                        pass # do   # convert to single percision 
+                    elif self.func == 5: # CVTSI
+                        pass  # do    
+                    elif self.func == 6: # CVTIS
                         pass  # do
-                    elif self.func == 7:  # RINT
-                        pass
-                elif self.p == 1:  # DOUBLE PERCISION
-                    if self.func == 0:  # ABS
-                        sim.regfile[self.rdi] = abs(sim.regfile[self.rai])
-                    elif self.func == 1:  # NEG
-                        sim.regfile[self.rdi] = ~(sim.regfile[self.rai])
-                    elif self.func == 2:  # SQRT
-                        sim.regfile[self.rdi] = math.sqrt(sim.regfile[self.rai])
-                    elif self.func == 4:  # CVTSD
-                        pass  # do   # convert to single percision
-                    elif self.func == 5:  # CVTSI
+                    elif self.func == 7: # RINT
                         pass  # do
-                    elif self.func == 6:  # CVTIS
+
+
+            # for opcode 43 FPU2                            
+            elif opcode == 43:  
+                if self.p == 0:                     # SINGLE PERCISION
+                    if self.func == 0:   # EQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) == sim.regfile.get(self.rbi) ) )
+                    elif self.func == 1: # NE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) != sim.regfile.get(self.rbi) ) )
+                    elif self.func == 2: # LT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) < sim.regfile.get(self.rbi) ) )
+                    elif self.func == 3: # GE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) > sim.regfile.get(self.rbi) ) )
+                    elif self.func == 4: # INF
+                        pass  # do    
+                    elif self.func == 5: # NAN
                         pass  # do
-                    elif self.func == 7:  # RINT
+                    elif self.func == 8: # ADD
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 9: # NADD
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 10: # MUL
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) ) )
+                    elif self.func == 11: # DIV
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) / sim.regfile.get(self.rbi) ) )
+                    elif self.func == 12: # MIN  
+                        sim.regfile.set( self.rdi, min( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
+                    elif self.func == 13: # MAX  
+                        sim.regfile.set( self.rdi, max( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
+                elif self.p == 1:                  # DOUBLE PERCISION
+                    if self.func == 0:   # EQ
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) == sim.regfile.get(self.rbi) ) )
+                    elif self.func == 1: # NE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) != sim.regfile.get(self.rbi) ) )
+                    elif self.func == 2: # LT
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) < sim.regfile.get(self.rbi) ) )
+                    elif self.func == 3: # GE
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) > sim.regfile.get(self.rbi) ) )
+                    elif self.func == 4: # INF
+                        pass  # do    
+                    elif self.func == 5: # NAN
                         pass  # do
+                    elif self.func == 8: # ADD
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 9: # NADD
+                        sim.regfile.set( self.rdi, ( -sim.regfile.get(self.rai) + sim.regfile.get(self.rbi) ) )
+                    elif self.func == 10: # MUL
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) * sim.regfile.get(self.rbi) ) )
+                    elif self.func == 11: # DIV
+                        sim.regfile.set( self.rdi, ( sim.regfile.get(self.rai) / sim.regfile.get(self.rbi) ) )
+                    elif self.func == 12: # MIN  
+                        sim.regfile.set( self.rdi, min( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
+                    elif self.func == 13: # MAX  
+                        sim.regfile.set( self.rdi, max( sim.regfile.get(self.rai) , sim.regfile.get(self.rbi) ) )
 
             # for self.opcode 43 FPU2
             elif self.opcode == 43:
